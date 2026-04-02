@@ -2,7 +2,7 @@
 
 <html class="light" lang="pt-BR"><head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 <title>Precision Curator - Daily Report</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -77,220 +77,274 @@
     .material-symbols-outlined {
         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+    html {
+        -webkit-text-size-adjust: 100%;
+        -moz-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
     body {
         font-family: 'Inter', sans-serif;
         background-color: #faf8ff;
+        overscroll-behavior: none;
     }
     .input-underlined {
         border: none;
         border-bottom: 2px solid #c3c6d6;
         background-color: #ffffff;
         transition: border-color 0.2s ease;
+        min-height: 44px;
     }
     .input-underlined:focus {
         outline: none;
         border-color: #003d9b;
         box-shadow: none;
     }
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
     .corretor-externo {
         color: #8c000e;
+    }
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+    @media (min-width: 768px) {
+        .chart-container {
+            height: 300px;
+        }
     }
     @media print {
         .no-print { display: none !important; }
         body { background: white; }
         .print-break { page-break-before: always; }
+        nav { display: none !important; }
+    }
+    @media (max-width: 380px) {
+        .text-4xl { font-size: 2rem; }
+        .text-3xl { font-size: 1.75rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .px-6 { padding-left: 1rem; padding-right: 1rem; }
+        .p-6 { padding: 1rem; }
+    }
+    .visita-item {
+        animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .remove-btn {
+        touch-action: manipulation;
     }
 </style>
 </head>
 <body class="text-on-surface">
 <div id="app">
 <!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-[#faf8ff]/80 backdrop-blur-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] h-16 flex justify-between items-center px-6">
-<div class="flex items-center gap-3">
-<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-xs font-bold">EP</div>
-<span class="text-xl font-black tracking-tighter text-[#191b23]">Precision Curator</span>
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#faf8ff]/95 backdrop-blur-md shadow-[0px_2px_10px_rgba(25,27,35,0.06)] h-14 md:h-16 flex justify-between items-center px-3 md:px-6">
+<div class="flex items-center gap-2 md:gap-3">
+<div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-[10px] md:text-xs font-bold">EP</div>
+<span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23] hidden xs:inline">Precision Curator</span>
+<span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23] xs:hidden">PC</span>
 </div>
-<div class="flex items-center gap-4">
-<span class="material-symbols-outlined text-[#737685] hover:bg-[#ededf8] p-2 rounded-lg transition-colors cursor-pointer">settings</span>
+<div class="flex items-center gap-2 md:gap-4">
+<span class="material-symbols-outlined text-[#737685] hover:bg-[#ededf8] p-1.5 md:p-2 rounded-lg transition-colors cursor-pointer text-xl md:text-2xl">settings</span>
 </div>
 </header>
 
 <!-- Report Page -->
-<main id="report-page" class="pt-24 pb-32 px-4 md:px-8 max-w-4xl mx-auto min-h-screen">
-<div class="mb-10">
-<h1 class="text-3xl font-extrabold tracking-tight text-on-surface mb-2">Relatório Diário</h1>
-<p class="text-outline font-medium text-sm">Preencha os dados da jornada atual para consolidação do dashboard.</p>
+<main id="report-page" class="pt-20 md:pt-24 pb-24 md:pb-32 px-3 md:px-4 lg:px-8 max-w-4xl mx-auto min-h-screen">
+<div class="mb-6 md:mb-10">
+<h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-on-surface mb-1 md:mb-2">Relatório Diário</h1>
+<p class="text-outline font-medium text-xs md:text-sm">Preencha os dados para consolidação do dashboard.</p>
 </div>
-<form id="daily-form" class="space-y-12">
-<section class="bg-surface-container-low p-6 rounded-xl">
+<form id="daily-form" class="space-y-6 md:space-y-12">
+<section class="bg-surface-container-low p-4 md:p-6 rounded-xl">
 <label class="block text-xs font-semibold uppercase tracking-widest text-outline mb-2">DATA DO RELATORIO</label>
-<input id="data-relatorio" class="w-full input-underlined py-3 text-lg font-medium text-on-surface" placeholder="DD/MM/YYYY" type="text"/>
+<input id="data-relatorio" class="w-full input-underlined py-2 md:py-3 text-base md:text-lg font-medium text-on-surface" placeholder="DD/MM/YYYY" type="text"/>
 </section>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
-<h3 class="text-sm font-bold text-primary mb-6 flex items-center gap-2">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+<div class="bg-surface-container-lowest p-4 md:p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+<h3 class="text-xs md:text-sm font-bold text-primary mb-4 md:mb-6 flex items-center gap-2">
 <span class="material-symbols-outlined text-sm">schedule</span>
-PRIMEIRA CONTATO DO DIA
+PRIMEIRO CONTATO DO DIA
 </h3>
-<div class="space-y-4">
+<div class="space-y-3 md:space-y-4">
 <div>
 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Data</label>
-<input id="primeiro-contato-data" class="w-full input-underlined py-2 text-sm" placeholder="DD/MM/YYYY" type="text"/>
+<input id="primeiro-contato-data" class="w-full input-underlined py-1.5 md:py-2 text-sm" placeholder="DD/MM/YYYY" type="text"/>
 </div>
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-2 gap-2 md:gap-4">
 <div>
 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Hora</label>
-<input id="primeiro-contato-horario" class="w-full input-underlined py-2 text-sm" placeholder="HH:MM" type="text"/>
+<input id="primeiro-contato-horario" class="w-full input-underlined py-1.5 md:py-2 text-sm" placeholder="HH:MM" type="text"/>
 </div>
 <div>
 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Nome</label>
-<input id="primeiro-contato-nome" class="w-full input-underlined py-2 text-sm" placeholder="Responsável" type="text"/>
+<input id="primeiro-contato-nome" class="w-full input-underlined py-1.5 md:py-2 text-sm" placeholder="Responsável" type="text"/>
 </div>
 </div>
 </div>
 </div>
 
-<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
-<h3 class="text-sm font-bold text-primary mb-6 flex items-center gap-2">
+<div class="bg-surface-container-lowest p-4 md:p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+<h3 class="text-xs md:text-sm font-bold text-primary mb-4 md:mb-6 flex items-center gap-2">
 <span class="material-symbols-outlined text-sm">history</span>
 ULTIMO CONTATO DO DIA
 </h3>
-<div class="space-y-4">
+<div class="space-y-3 md:space-y-4">
 <div>
 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Data</label>
-<input id="ultimo-contato-data" class="w-full input-underlined py-2 text-sm" placeholder="DD/MM/YYYY" type="text"/>
+<input id="ultimo-contato-data" class="w-full input-underlined py-1.5 md:py-2 text-sm" placeholder="DD/MM/YYYY" type="text"/>
 </div>
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-2 gap-2 md:gap-4">
 <div>
 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Hora</label>
-<input id="ultimo-contato-horario" class="w-full input-underlined py-2 text-sm" placeholder="HH:MM" type="text"/>
+<input id="ultimo-contato-horario" class="w-full input-underlined py-1.5 md:py-2 text-sm" placeholder="HH:MM" type="text"/>
 </div>
 <div>
 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Nome</label>
-<input id="ultimo-contato-nome" class="w-full input-underlined py-2 text-sm" placeholder="Responsável" type="text"/>
+<input id="ultimo-contato-nome" class="w-full input-underlined py-1.5 md:py-2 text-sm" placeholder="Responsável" type="text"/>
 </div>
 </div>
 </div>
 </div>
 
-<section class="space-y-6">
+<section class="space-y-4 md:space-y-6">
 <h2 class="text-xs font-bold text-outline uppercase tracking-widest border-b border-outline-variant/20 pb-2">Volume de Leads</h2>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
 <div class="flex flex-col">
-<label class="text-[11px] font-bold text-on-surface-variant mb-2">QUANTIDADE DE LEADS ATENDIDAS VENDAS</label>
-<input id="leads-vendas" class="input-underlined text-2xl font-bold py-2 text-primary" type="number" value="0"/>
+<label class="text-[10px] md:text-[11px] font-bold text-on-surface-variant mb-1 md:mb-2">LEADS VENDAS</label>
+<input id="leads-vendas" class="input-underlined text-xl md:text-2xl font-bold py-2 text-primary" type="number" value="0"/>
 </div>
 <div class="flex flex-col">
-<label class="text-[11px] font-bold text-on-surface-variant mb-2">QUANTIDADE DE LEADS ATENDIDAS ALUGUEL</label>
-<input id="leads-aluguel" class="input-underlined text-2xl font-bold py-2 text-primary" type="number" value="0"/>
+<label class="text-[10px] md:text-[11px] font-bold text-on-surface-variant mb-1 md:mb-2">LEADS ALUGUEL</label>
+<input id="leads-aluguel" class="input-underlined text-xl md:text-2xl font-bold py-2 text-primary" type="number" value="0"/>
 </div>
 <div class="flex flex-col">
-<label class="text-[11px] font-bold text-on-surface-variant mb-2">QUANTIDADE DE CORRETORES EXTERNOS ATENDIDOS</label>
-<input id="corretores-externos" class="input-underlined text-2xl font-black py-2 corretor-externo" type="number" value="0"/>
+<label class="text-[10px] md:text-[11px] font-bold text-on-surface-variant mb-1 md:mb-2">CORRETORES EXTERNOS</label>
+<input id="corretores-externos" class="input-underlined text-xl md:text-2xl font-black py-2 corretor-externo" type="number" value="0"/>
 </div>
 </div>
 </section>
 
-<section class="bg-surface-container p-8 rounded-2xl">
-<div class="flex justify-between items-center mb-6">
+<section class="bg-surface-container p-4 md:p-8 rounded-xl md:rounded-2xl">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
 <h2 class="text-sm font-extrabold uppercase tracking-widest text-on-surface">Visitas Vendas</h2>
-<button type="button" onclick="adicionarVisita()" class="flex items-center gap-2 text-xs font-bold text-primary hover:bg-surface-container-high px-4 py-2 rounded-full transition-colors active:scale-95 duration-200">
+<button type="button" onclick="adicionarVisita()" class="flex items-center gap-1.5 md:gap-2 text-xs font-bold text-primary hover:bg-surface-container-high px-3 md:px-4 py-2 rounded-full transition-colors active:scale-95 duration-200 w-full sm:w-auto justify-center">
 <span class="material-symbols-outlined text-sm">add_circle</span>
-ADICIONAR CORRETOR OPENHOUSE
+<span class="whitespace-nowrap">ADICIONAR</span>
 </button>
 </div>
-<div id="visitas-container" class="space-y-6">
-<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4 visita-item">
+<div id="visitas-container" class="space-y-4 md:space-y-6">
+<div class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-sm space-y-3 md:space-y-4 visita-item">
 <div>
-<label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">NÚMERO DE ATENDIMENTO</label>
-<input class="w-full input-underlined py-2 text-sm font-medium numero-atendimento" placeholder="ID-0000" type="text"/>
+<label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">NÚMERO ATENDIMENTO</label>
+<input class="w-full input-underlined py-1.5 md:py-2 text-sm font-medium numero-atendimento" placeholder="ID-0000" type="text"/>
 </div>
 <div>
 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">CORRETOR OPENHOUSE</label>
-<input class="w-full input-underlined py-2 text-sm corretor-openhouse" placeholder="Nome completo do corretor" type="text"/>
+<input class="w-full input-underlined py-1.5 md:py-2 text-sm corretor-openhouse" placeholder="Nome do corretor" type="text"/>
 </div>
 </div>
 </div>
 </section>
 
 <section>
-<label class="block text-xs font-bold text-outline uppercase tracking-widest mb-4">CAMPO OBSERVAÇÃO</label>
-<textarea id="observacao" class="w-full bg-white border-2 border-outline-variant/10 rounded-xl p-4 text-on-surface focus:border-primary focus:ring-0 transition-all placeholder:text-outline-variant" placeholder="Descreva aqui eventos importantes, ocorrências ou notas extras do dia..." rows="4"></textarea>
+<label class="block text-xs font-bold text-outline uppercase tracking-widest mb-3 md:mb-4">CAMPO OBSERVAÇÃO</label>
+<textarea id="observacao" class="w-full bg-white border-2 border-outline-variant/10 rounded-xl p-3 md:p-4 text-on-surface focus:border-primary focus:ring-0 transition-all placeholder:text-outline-variant text-sm md:text-base" placeholder="Descreva eventos importantes do dia..." rows="3 md:4"></textarea>
 </section>
 
-<section class="bg-primary text-white p-8 rounded-2xl shadow-xl">
-<h2 class="text-xs font-bold uppercase tracking-[0.2em] mb-8 text-on-primary-container">Quantificação do Dia</h2>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-<div>
-<span class="block text-[10px] font-bold opacity-70 uppercase mb-2">Total Leads Aluguel</span>
-<span id="total-aluguel" class="text-4xl font-black">0</span>
+<section class="bg-primary text-white p-4 md:p-8 rounded-xl md:rounded-2xl shadow-xl">
+<h2 class="text-xs font-bold uppercase tracking-[0.2em] mb-4 md:mb-8 text-on-primary-container">Quantificação do Dia</h2>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8 text-center">
+<div class="py-3 md:py-0">
+<span class="block text-[10px] font-bold opacity-70 uppercase mb-1 md:mb-2">Total Aluguel</span>
+<span id="total-aluguel" class="text-2xl md:text-4xl font-black">0</span>
 </div>
-<div class="border-y md:border-y-0 md:border-x border-white/20 py-6 md:py-0">
-<span class="block text-[10px] font-bold opacity-70 uppercase mb-2">Total Leads Vendas</span>
-<span id="total-vendas" class="text-4xl font-black">0</span>
+<div class="border-y sm:border-y-0 sm:border-x border-white/20 py-3 md:py-0">
+<span class="block text-[10px] font-bold opacity-70 uppercase mb-1 md:mb-2">Total Vendas</span>
+<span id="total-vendas" class="text-2xl md:text-4xl font-black">0</span>
 </div>
-<div>
-<span class="block text-[10px] font-bold opacity-70 uppercase mb-2">Total Corretores</span>
-<span id="total-corretores" class="text-4xl font-black">0</span>
+<div class="py-3 md:py-0">
+<span class="block text-[10px] font-bold opacity-70 uppercase mb-1 md:mb-2">Total Corretores</span>
+<span id="total-corretores" class="text-2xl md:text-4xl font-black">0</span>
 </div>
 </div>
-<div class="mt-10 pt-6 border-t border-white/10 flex justify-between items-center">
+<div class="mt-6 md:mt-10 pt-4 md:pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-2">
 <span class="text-xs font-medium text-on-primary-container">CONSOLIDAÇÃO FINAL</span>
-<span id="consolidacao-final" class="text-2xl font-extrabold">SUM 00</span>
+<span id="consolidacao-final" class="text-lg md:text-2xl font-extrabold">SUM 00</span>
 </div>
 </section>
 
-<div class="flex justify-end pt-4 pb-12">
-<button type="submit" class="px-10 py-4 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-3">
+<div class="flex justify-end pt-4 pb-8 md:pb-12">
+<button type="submit" class="w-full sm:w-auto px-6 md:px-10 py-3 md:py-4 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 md:gap-3">
 <span class="material-symbols-outlined">save</span>
-SALVAR RELATÓRIO
+<span class="text-sm md:text-base">SALVAR</span>
 </button>
 </div>
 </form>
 </main>
 
 <!-- Dashboard Page -->
-<main id="dashboard-page" class="hidden pt-24 pb-32 px-4 md:px-12 max-w-7xl mx-auto">
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+<main id="dashboard-page" class="hidden pt-20 md:pt-24 pb-24 md:pb-32 px-3 md:px-4 lg:px-12 max-w-7xl mx-auto">
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 md:mb-12 gap-4 lg:gap-6">
 <div>
-<h1 class="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Consolidação</h1>
-<p class="text-outline font-medium">Visão geral de desempenho e atendimentos operacionais.</p>
+<h1 class="text-2xl md:text-4xl font-extrabold tracking-tight text-on-surface mb-1 md:mb-2">Consolidação</h1>
+<p class="text-outline font-medium text-xs md:text-sm">Visão geral de desempenho operacional.</p>
 </div>
-<div class="flex flex-wrap gap-3 no-print">
-<button onclick="imprimirPDF()" class="flex items-center gap-2 px-5 py-2.5 bg-surface-container-low text-primary font-bold rounded-xl hover:bg-surface-container-high transition-colors active:scale-95 duration-200">
-<span class="material-symbols-outlined text-[20px]">print</span>
-<span class="text-sm">Imprimir PDF</span>
+<div class="flex flex-wrap gap-2 md:gap-3 w-full lg:w-auto no-print">
+<button onclick="imprimirPDF()" class="flex-1 lg:flex-none items-center gap-2 px-4 md:px-5 py-2.5 bg-surface-container-low text-primary font-bold rounded-xl hover:bg-surface-container-high transition-colors active:scale-95 duration-200 justify-center">
+<span class="material-symbols-outlined text-lg md:text-[20px]">print</span>
+<span class="text-sm">Imprimir</span>
 </button>
-<button onclick="exportarDados()" class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-opacity active:scale-95 duration-200">
-<span class="material-symbols-outlined text-[20px]">file_download</span>
+<button onclick="exportarDados()" class="flex-1 lg:flex-none items-center gap-2 px-4 md:px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-opacity active:scale-95 duration-200 justify-center">
+<span class="material-symbols-outlined text-lg md:text-[20px]">file_download</span>
 <span class="text-sm">Exportar</span>
 </button>
 </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-<div class="lg:col-span-3 space-y-6">
-<section class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] border-b-2 border-transparent focus-within:border-primary transition-all">
-<label class="block text-[10px] uppercase tracking-widest font-bold text-outline mb-4">Período de Consolidação</label>
-<div class="space-y-4">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 mb-6 md:mb-8">
+<div class="lg:col-span-3 space-y-4 md:space-y-6 order-2 lg:order-1">
+<section class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] border-b-2 border-transparent focus-within:border-primary transition-all">
+<label class="block text-[10px] uppercase tracking-widest font-bold text-outline mb-3 md:mb-4">Período de Consolidação</label>
+<div class="space-y-3 md:space-y-4">
 <div>
 <span class="text-xs text-on-surface-variant font-medium block mb-1">Início</span>
-<input id="data-inicio" class="w-full bg-surface-container-low border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" type="date"/>
+<input id="data-inicio" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3 focus:ring-2 focus:ring-primary" type="date"/>
 </div>
 <div>
 <span class="text-xs text-on-surface-variant font-medium block mb-1">Término</span>
-<input id="data-fim" class="w-full bg-surface-container-low border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" type="date"/>
+<input id="data-fim" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3 focus:ring-2 focus:ring-primary" type="date"/>
 </div>
-<button onclick="processarDados()" class="w-full py-3 bg-surface-container-high text-primary font-bold rounded-lg text-sm hover:bg-primary hover:text-white transition-all">
+<button onclick="processarDados()" class="w-full py-2.5 md:py-3 bg-surface-container-high text-primary font-bold rounded-lg text-sm hover:bg-primary hover:text-white transition-all">
 Processar Dados
 </button>
 </div>
 </section>
-<section class="bg-primary/5 p-6 rounded-xl border border-primary/10">
-<h3 class="text-xs font-bold text-primary uppercase tracking-widest mb-4">Meta Mensal</h3>
+<section class="bg-primary/5 p-4 md:p-6 rounded-xl border border-primary/10">
+<h3 class="text-xs font-bold text-primary uppercase tracking-widest mb-3 md:mb-4">Meta Mensal</h3>
 <div class="flex items-end gap-2 mb-2">
-<span id="meta-percentual" class="text-3xl font-black text-primary">0%</span>
+<span id="meta-percentual" class="text-2xl md:text-3xl font-black text-primary">0%</span>
 <span class="text-xs text-primary/60 font-bold mb-1">concluída</span>
 </div>
 <div class="w-full bg-primary/10 h-1.5 rounded-full overflow-hidden">
@@ -299,100 +353,103 @@ Processar Dados
 </section>
 </div>
 
-<div class="lg:col-span-9">
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
-<div class="flex items-center justify-between mb-4">
-<span class="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-lg">sell</span>
+<div class="lg:col-span-9 order-1 lg:order-2">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+<div class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
+<div class="flex items-center justify-between mb-3 md:mb-4">
+<span class="material-symbols-outlined text-primary p-1.5 md:p-2 bg-primary/10 rounded-lg text-lg md:text-xl">sell</span>
 </div>
-<p class="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Vendas</p>
-<h4 id="total-vendas-consolidado" class="text-2xl font-black text-on-surface">0</h4>
+<p class="text-[10px] md:text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Vendas</p>
+<h4 id="total-vendas-consolidado" class="text-xl md:text-2xl font-black text-on-surface">0</h4>
 </div>
-<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
-<div class="flex items-center justify-between mb-4">
-<span class="material-symbols-outlined text-secondary p-2 bg-secondary/10 rounded-lg">key</span>
+<div class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
+<div class="flex items-center justify-between mb-3 md:mb-4">
+<span class="material-symbols-outlined text-secondary p-1.5 md:p-2 bg-secondary/10 rounded-lg text-lg md:text-xl">key</span>
 </div>
-<p class="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Aluguel</p>
-<h4 id="total-aluguel-consolidado" class="text-2xl font-black text-on-surface">0</h4>
+<p class="text-[10px] md:text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Aluguel</p>
+<h4 id="total-aluguel-consolidado" class="text-xl md:text-2xl font-black text-on-surface">0</h4>
 </div>
-<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
-<div class="flex items-center justify-between mb-4">
-<span class="material-symbols-outlined text-tertiary p-2 bg-tertiary/10 rounded-lg">group</span>
+<div class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
+<div class="flex items-center justify-between mb-3 md:mb-4">
+<span class="material-symbols-outlined text-tertiary p-1.5 md:p-2 bg-tertiary/10 rounded-lg text-lg md:text-xl">group</span>
 </div>
-<p class="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Corretores</p>
-<h4 id="total-corretores-consolidado" class="text-2xl font-black text-tertiary">0</h4>
+<p class="text-[10px] md:text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Corretores</p>
+<h4 id="total-corretores-consolidado" class="text-xl md:text-2xl font-black text-tertiary">0</h4>
 </div>
 </div>
 
-<div class="bg-surface-container-lowest p-8 rounded-2xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] mb-8">
-<div class="flex items-center justify-between mb-10">
+<div class="bg-surface-container-lowest p-4 md:p-8 rounded-xl md:rounded-2xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] mb-6 md:mb-8">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-0 mb-6 md:mb-10">
 <div>
-<h3 class="text-lg font-bold text-on-surface">Acompanhamento Temporal</h3>
-<p class="text-xs text-outline font-medium">Distribuição diária de atendimentos consolidados</p>
+<h3 class="text-base md:text-lg font-bold text-on-surface">Acompanhamento Temporal</h3>
+<p class="text-xs text-outline font-medium">Distribuição de atendimentos consolidados</p>
 </div>
-<div class="flex items-center gap-4">
-<div class="flex items-center gap-2">
-<div class="w-2.5 h-2.5 rounded-full bg-primary"></div>
-<span class="text-[10px] font-bold text-outline uppercase tracking-tighter">Vendas</span>
+<div class="flex flex-wrap items-center gap-3 md:gap-4">
+<div class="flex items-center gap-1.5 md:gap-2">
+<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-primary"></div>
+<span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Vendas</span>
 </div>
-<div class="flex items-center gap-2">
-<div class="w-2.5 h-2.5 rounded-full bg-secondary"></div>
-<span class="text-[10px] font-bold text-outline uppercase tracking-tighter">Aluguel</span>
+<div class="flex items-center gap-1.5 md:gap-2">
+<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-secondary"></div>
+<span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Aluguel</span>
 </div>
-<div class="flex items-center gap-2">
-<div class="w-2.5 h-2.5 rounded-full bg-tertiary"></div>
-<span class="text-[10px] font-bold text-outline uppercase tracking-tighter">Externos</span>
+<div class="flex items-center gap-1.5 md:gap-2">
+<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-tertiary"></div>
+<span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Externos</span>
 </div>
 </div>
 </div>
-<div class="h-64 relative">
+<div class="chart-container">
 <canvas id="line-chart"></canvas>
 </div>
 </div>
 </div>
-
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-24">
-<div class="bg-surface-container-lowest p-8 rounded-2xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
-<div class="flex items-center justify-between mb-6">
-<h3 class="text-lg font-bold text-on-surface">Visitas OpenHouse</h3>
-</div>
-<div id="visitas-openhouse-container" class="space-y-4">
-</div>
 </div>
 
-<div class="bg-surface-container-lowest p-8 rounded-2xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
-<div class="flex items-center justify-between mb-8">
-<h3 class="text-lg font-bold text-on-surface">Agendamentos OpenHouse</h3>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-20 md:mb-24">
+<div class="bg-surface-container-lowest p-4 md:p-8 rounded-xl md:rounded-2xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
+<div class="flex items-center justify-between mb-4 md:mb-6">
+<h3 class="text-base md:text-lg font-bold text-on-surface">Visitas OpenHouse</h3>
 </div>
-<div class="relative flex items-center justify-center py-4">
+<div id="visitas-openhouse-container" class="space-y-3 md:space-y-4 max-h-[400px] overflow-y-auto">
+</div>
+</div>
+
+<div class="bg-surface-container-lowest p-4 md:p-8 rounded-xl md:rounded-2xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)]">
+<div class="flex items-center justify-between mb-6 md:mb-8">
+<h3 class="text-base md:text-lg font-bold text-on-surface">Agendamentos OpenHouse</h3>
+</div>
+<div class="relative flex items-center justify-center py-4 md:py-6">
+<div class="chart-container" style="max-width: 220px; height: 220px;">
 <canvas id="donut-chart"></canvas>
+</div>
 <div class="absolute flex flex-col items-center">
-<span id="total-agendamentos" class="text-3xl font-black text-on-surface">0</span>
-<span class="text-[10px] font-bold text-outline uppercase tracking-widest">Total Geral</span>
+<span id="total-agendamentos" class="text-2xl md:text-3xl font-black text-on-surface">0</span>
+<span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-widest">Total Geral</span>
 </div>
 </div>
-<div class="grid grid-cols-2 gap-4 mt-8">
-<div class="p-3 bg-surface-container rounded-xl">
-<p class="text-[10px] font-bold text-outline uppercase mb-1">Corretores Únicos</p>
-<p id="corretores-unicos" class="text-lg font-black text-on-surface">0</p>
+<div class="grid grid-cols-2 gap-3 md:gap-4 mt-4 md:mt-8">
+<div class="p-3 md:p-4 bg-surface-container rounded-xl">
+<p class="text-[9px] md:text-[10px] font-bold text-outline uppercase mb-1">Corretores Únicos</p>
+<p id="corretores-unicos" class="text-lg md:text-xl font-black text-on-surface">0</p>
 </div>
-<div class="p-3 bg-surface-container rounded-xl">
-<p class="text-[10px] font-bold text-outline uppercase mb-1">Total Visitas</p>
-<p id="total-visitas" class="text-lg font-black text-on-surface">0</p>
+<div class="p-3 md:p-4 bg-surface-container rounded-xl">
+<p class="text-[9px] md:text-[10px] font-bold text-outline uppercase mb-1">Total Visitas</p>
+<p id="total-visitas" class="text-lg md:text-xl font-black text-on-surface">0</p>
 </div>
 </div>
 </div>
 </div>
 </main>
 
-<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-2 bg-white/90 backdrop-blur-2xl shadow-[0px_-4px_20px_rgba(25,27,35,0.04)] z-50 rounded-t-2xl">
-<a id="nav-report" onclick="mostrarPagina('report')" class="flex flex-col items-center justify-center bg-gradient-to-br from-[#003d9b] to-[#0052cc] text-white rounded-xl px-8 py-2 active:scale-90 transition-transform duration-300 cursor-pointer">
-<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
-<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-semibold mt-1">Report</span>
+<nav class="fixed bottom-0 left-0 right-0 flex justify-around items-center h-16 md:h-20 px-2 md:px-4 pb-1 md:pb-2 bg-white/95 backdrop-blur-md shadow-[0px_-2px_15px_rgba(25,27,35,0.06)] z-50 rounded-t-xl md:rounded-t-2xl">
+<a id="nav-report" onclick="mostrarPagina('report')" class="flex flex-col items-center justify-center bg-gradient-to-br from-[#003d9b] to-[#0052cc] text-white rounded-lg md:rounded-xl px-4 md:px-8 py-1.5 md:py-2 active:scale-90 transition-transform duration-300 cursor-pointer flex-1 mx-1">
+<span class="material-symbols-outlined text-lg md:text-xl">assignment</span>
+<span class="font-['Inter'] text-[9px] md:text-[10px] uppercase tracking-[0.05em] font-semibold mt-0.5 md:mt-1">Report</span>
 </a>
-<a id="nav-dashboard" onclick="mostrarPagina('dashboard')" class="flex flex-col items-center justify-center text-[#737685] dark:text-slate-500 px-8 py-2 hover:text-[#0052CC] active:scale-90 transition-transform duration-300 cursor-pointer">
-<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
-<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-semibold mt-1">Dashboard</span>
+<a id="nav-dashboard" onclick="mostrarPagina('dashboard')" class="flex flex-col items-center justify-center text-[#737685] px-4 md:px-8 py-1.5 md:py-2 hover:text-[#0052CC] active:scale-90 transition-transform duration-300 cursor-pointer flex-1 mx-1">
+<span class="material-symbols-outlined text-lg md:text-xl">monitoring</span>
+<span class="font-['Inter'] text-[9px] md:text-[10px] uppercase tracking-[0.05em] font-semibold mt-0.5 md:mt-1">Dashboard</span>
 </a>
 </nav>
 </div>
@@ -404,19 +461,20 @@ let donutChart = null;
 function adicionarVisita() {
     const container = document.getElementById('visitas-container');
     const div = document.createElement('div');
-    div.className = 'bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4 visita-item';
+    div.className = 'bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-sm space-y-3 md:space-y-4 visita-item';
     div.innerHTML = `
         <div>
-            <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">NÚMERO DE ATENDIMENTO</label>
-            <input class="w-full input-underlined py-2 text-sm font-medium numero-atendimento" placeholder="ID-0000" type="text"/>
+            <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">NÚMERO ATENDIMENTO</label>
+            <input class="w-full input-underlined py-1.5 md:py-2 text-sm font-medium numero-atendimento" placeholder="ID-0000" type="text"/>
         </div>
         <div>
             <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">CORRETOR OPENHOUSE</label>
-            <input class="w-full input-underlined py-2 text-sm corretor-openhouse" placeholder="Nome completo do corretor" type="text"/>
+            <input class="w-full input-underlined py-1.5 md:py-2 text-sm corretor-openhouse" placeholder="Nome do corretor" type="text"/>
         </div>
-        <button type="button" onclick="this.parentElement.remove()" class="text-xs text-tertiary hover:text-red-700">Remover</button>
+        <button type="button" onclick="this.parentElement.remove()" class="text-xs text-tertiary hover:text-red-700 remove-btn py-1">Remover</button>
     `;
     container.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function atualizarQuantificacao() {
@@ -475,14 +533,14 @@ document.getElementById('daily-form').addEventListener('submit', function(e) {
     this.reset();
     atualizarQuantificacao();
     document.getElementById('visitas-container').innerHTML = `
-        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4 visita-item">
+        <div class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-sm space-y-3 md:space-y-4 visita-item">
             <div>
-                <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">NÚMERO DE ATENDIMENTO</label>
-                <input class="w-full input-underlined py-2 text-sm font-medium numero-atendimento" placeholder="ID-0000" type="text"/>
+                <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">NÚMERO ATENDIMENTO</label>
+                <input class="w-full input-underlined py-1.5 md:py-2 text-sm font-medium numero-atendimento" placeholder="ID-0000" type="text"/>
             </div>
             <div>
                 <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">CORRETOR OPENHOUSE</label>
-                <input class="w-full input-underlined py-2 text-sm corretor-openhouse" placeholder="Nome completo do corretor" type="text"/>
+                <input class="w-full input-underlined py-1.5 md:py-2 text-sm corretor-openhouse" placeholder="Nome do corretor" type="text"/>
             </div>
         </div>
     `;
@@ -544,7 +602,6 @@ function processarDados() {
     document.getElementById('total-aluguel-consolidado').textContent = totalAluguel;
     document.getElementById('total-corretores-consolidado').textContent = totalCorretores;
     
-    const meta = 100;
     const percentual = Math.min(100, ((totalVendas + totalAluguel + totalCorretores) / 50) * 100);
     document.getElementById('meta-percentual').textContent = Math.round(percentual) + '%';
     document.getElementById('meta-barra').style.width = percentual + '%';
@@ -567,7 +624,9 @@ function processarDados() {
                     borderColor: '#003d9b',
                     backgroundColor: 'rgba(0, 61, 155, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: window.innerWidth < 768 ? 3 : 4,
+                    pointHoverRadius: window.innerWidth < 768 ? 5 : 6
                 },
                 {
                     label: 'Aluguel',
@@ -575,7 +634,9 @@ function processarDados() {
                     borderColor: '#4c5d8d',
                     backgroundColor: 'rgba(76, 93, 141, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: window.innerWidth < 768 ? 3 : 4,
+                    pointHoverRadius: window.innerWidth < 768 ? 5 : 6
                 },
                 {
                     label: 'Corretores',
@@ -583,7 +644,9 @@ function processarDados() {
                     borderColor: '#8c000e',
                     backgroundColor: 'rgba(140, 0, 14, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: window.innerWidth < 768 ? 3 : 4,
+                    pointHoverRadius: window.innerWidth < 768 ? 5 : 6
                 }
             ]
         },
@@ -591,10 +654,29 @@ function processarDados() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    titleFont: { size: window.innerWidth < 768 ? 11 : 12 },
+                    bodyFont: { size: window.innerWidth < 768 ? 10 : 11 }
+                }
             },
             scales: {
-                y: { beginAtZero: true }
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        font: { size: window.innerWidth < 768 ? 9 : 11 }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: { size: window.innerWidth < 768 ? 8 : 10 },
+                        maxRotation: window.innerWidth < 768 ? 45 : 0
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
@@ -604,18 +686,18 @@ function processarDados() {
     const sortedCorretores = Object.entries(corretoresVisitas).sort((a, b) => b[1] - a[1]);
     
     if (sortedCorretores.length === 0) {
-        container.innerHTML = '<p class="text-outline text-sm">Nenhuma visita registrada</p>';
+        container.innerHTML = '<p class="text-outline text-sm p-2">Nenhuma visita registrada</p>';
     } else {
         sortedCorretores.forEach(([nome, qtd]) => {
             const initials = nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             const div = document.createElement('div');
-            div.className = 'group flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors';
+            div.className = 'flex items-center justify-between p-2 md:p-3 rounded-lg hover:bg-surface-container-low transition-colors';
             div.innerHTML = `
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary">${initials}</div>
+                <div class="flex items-center gap-3 md:gap-4">
+                    <div class="w-8 md:w-10 h-8 md:h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs md:text-sm">${initials}</div>
                     <div>
                         <p class="text-sm font-bold text-on-surface">${nome}</p>
-                        <p class="text-[10px] text-outline font-medium">CORRETOR OPENHOUSE</p>
+                        <p class="text-[9px] md:text-[10px] text-outline font-medium">CORRETOR OPENHOUSE</p>
                     </div>
                 </div>
                 <div class="text-right">
@@ -639,13 +721,13 @@ function processarDados() {
             datasets: [{
                 data: [totalVisitas || 1],
                 backgroundColor: ['#4c5d8d'],
-                borderWidth: 14,
+                borderWidth: 12,
                 borderColor: '#ededf8'
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
             cutout: '70%',
             plugins: {
                 legend: { display: false }
@@ -670,12 +752,15 @@ function imprimirPDF() {
     let html = `<!DOCTYPE html>
 <html><head><title>Relatório Consolidado</title>
 <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { color: #003d9b; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 100%; overflow-x: hidden; }
+    h1 { color: #003d9b; font-size: 24px; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     th { background: #003d9b; color: white; }
     .summary { background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 8px; }
+    @media print {
+        body { -webkit-print-color-adjust: exact; }
+    }
 </style>
 </head><body>
 <h1>Relatório Consolidado</h1>
@@ -683,7 +768,7 @@ function imprimirPDF() {
     
     let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
     
-    html += '<table><tr><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores Externos</th><th>Visitas OpenHouse</th></tr>';
+    html += '<table><tr><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores</th><th>Visitas OpenHouse</th></tr>';
     
     relatorios.forEach(r => {
         totalVendas += r.leadsVendas || 0;
@@ -745,5 +830,11 @@ const hoje = new Date().toISOString().split('T')[0];
 document.getElementById('data-inicio').value = hoje;
 document.getElementById('data-fim').value = hoje;
 atualizarQuantificacao();
+
+window.addEventListener('resize', function() {
+    if (!document.getElementById('dashboard-page').classList.contains('hidden')) {
+        processarDados();
+    }
+});
 </script>
 </body></html>
