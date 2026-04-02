@@ -949,7 +949,7 @@ document.getElementById('daily-form').addEventListener('submit', async function(
         const numero = item.querySelector('.numero-atendimento').value;
         const corretor = item.querySelector('.corretor-openhouse').value;
         if (numero || corretor) {
-            visitas.push({ numero, corretor });
+            visitas.push({ numero, corretor: corretor.toUpperCase().trim() });
         }
     });
     
@@ -1099,7 +1099,8 @@ async function processarDados() {
         if (r.visitas) {
             r.visitas.forEach(v => {
                 if (v.corretor) {
-                    corretoresVisitas[v.corretor] = (corretoresVisitas[v.corretor] || 0) + 1;
+                    const nomeNormalizado = v.corretor.toUpperCase().trim();
+                    corretoresVisitas[nomeNormalizado] = (corretoresVisitas[nomeNormalizado] || 0) + 1;
                     totalVisitas++;
                 }
             });
@@ -1376,7 +1377,7 @@ async function imprimirPDF() {
 <table><tr><th>Código</th><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores</th><th>Visitas OpenHouse</th></tr>`;
     
     relatorios.forEach(r => {
-        const visitas = r.visitas ? r.visitas.map(v => v.corretor).join(', ') : '-';
+        const visitas = r.visitas ? r.visitas.map(v => v.corretor ? v.corretor.toUpperCase().trim() : '').join(', ') : '-';
         html += `<tr><td>${r.codigo || '-'}</td><td>${r.dataRelatorio || '-'}</td><td>${r.leadsVendas || 0}</td><td>${r.leadsAluguel || 0}</td><td>${r.corretoresExternos || 0}</td><td>${visitas}</td></tr>`;
     });
     
@@ -1464,7 +1465,7 @@ async function exportarDados() {
         'Leads Vendas': r.leadsVendas,
         'Leads Aluguel': r.leadsAluguel,
         'Corretores Externos': r.corretoresExternos,
-        'Visitas OpenHouse': r.visitas ? r.visitas.map(v => v.corretor).join('; ') : ''
+        'Visitas OpenHouse': r.visitas ? r.visitas.map(v => v.corretor ? v.corretor.toUpperCase().trim() : '').join('; ') : ''
     }));
     
     const ws = XLSX.utils.json_to_sheet(dados);
@@ -1544,7 +1545,7 @@ async function importarDados(event) {
                 leadsVendas: parseInt(row['Leads Vendas']) || 0,
                 leadsAluguel: parseInt(row['Leads Aluguel']) || 0,
                 corretoresExternos: parseInt(row['Corretores Externos']) || 0,
-                visitas: row['Visitas OpenHouse'] ? row['Visitas OpenHouse'].split(';').map(v => ({ corretor: v.trim(), numero: '' })) : [],
+                visitas: row['Visitas OpenHouse'] ? row['Visitas OpenHouse'].split(';').map(v => ({ corretor: v.trim().toUpperCase(), numero: '' })) : [],
                 observacao: '',
                 dataCriacao: new Date().toISOString()
             };
