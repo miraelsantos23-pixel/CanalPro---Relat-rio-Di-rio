@@ -1253,45 +1253,151 @@ async function imprimirPDF() {
         });
     }
     
-    let html = `<!DOCTYPE html>
-<html><head><title>Relatório Consolidado</title>
-<style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 100%; }
-    h1 { color: #003d9b; font-size: 24px; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background: #003d9b; color: white; }
-    .summary { background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 8px; }
-</style>
-</head><body>
-<h1>Relatório Consolidado</h1>
-<p>Período: ${dataInicio || 'Início'} até ${dataFim || 'Atual'}</p>`;
-    
     let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
-    
-    html += '<table><tr><th>Código</th><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores</th><th>Visitas OpenHouse</th></tr>';
+    const vendasPorDia = {};
+    const aluguelPorDia = {};
+    const corretoresPorDia = {};
     
     relatorios.forEach(r => {
         totalVendas += r.leadsVendas || 0;
         totalAluguel += r.leadsAluguel || 0;
         totalCorretores += r.corretoresExternos || 0;
+        
+        const data = r.dataRelatorio;
+        vendasPorDia[data] = (vendasPorDia[data] || 0) + (r.leadsVendas || 0);
+        aluguelPorDia[data] = (aluguelPorDia[data] || 0) + (r.leadsAluguel || 0);
+        corretoresPorDia[data] = (corretoresPorDia[data] || 0) + (r.corretoresExternos || 0);
+    });
+    
+    const consolidacaoGeral = totalVendas + totalAluguel + totalCorretores;
+    const pctVendas = consolidacaoGeral > 0 ? ((totalVendas / consolidacaoGeral) * 100).toFixed(1) : 0;
+    const pctAluguel = consolidacaoGeral > 0 ? ((totalAluguel / consolidacaoGeral) * 100).toFixed(1) : 0;
+    const pctCorretores = consolidacaoGeral > 0 ? ((totalCorretores / consolidacaoGeral) * 100).toFixed(1) : 0;
+    
+    const datasOrdenadas = Object.keys(vendasPorDia).sort();
+    const labels = datasOrdenadas.map(d => d.substring(5));
+    const vendasData = datasOrdenadas.map(d => vendasPorDia[d]);
+    const aluguelData = datasOrdenadas.map(d => aluguelPorDia[d]);
+    const corretoresData = datasOrdenadas.map(d => corretoresPorDia[d]);
+    
+    let html = `<!DOCTYPE html>
+<html><head><title>Relatório Consolidado</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
+<style>
+    @page { size: landscape; margin: 1cm; }
+    body { font-family: Arial, sans-serif; padding: 15px; max-width: 100%; }
+    h1 { color: #003d9b; font-size: 24px; margin-bottom: 10px; }
+    h2 { color: #333; font-size: 16px; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+    th { background: #003d9b; color: white; }
+    .summary { background: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 8px; }
+    .summary-grid { display: flex; justify-content: space-between; gap: 15px; margin: 15px 0; }
+    .summary-box { flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #ddd; }
+    .summary-box.vendas { border-color: #00C853; }
+    .summary-box.aluguel { border-color: #FFD600; }
+    .summary-box.corretores { border-color: #D32F2F; }
+    .summary-box h3 { margin: 0 0 10px 0; font-size: 14px; }
+    .summary-box .valor { font-size: 28px; font-weight: bold; }
+    .summary-box.vendas .valor { color: #00C853; }
+    .summary-box.aluguel .valor { color: #FFD600; }
+    .summary-box.corretores .valor { color: #D32F2F; }
+    .summary-box .porcentagem { font-size: 18px; font-weight: bold; color: #333; }
+    .chart-container { width: 100%; height: 300px; margin: 20px 0; }
+    .header-info { display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .header-info p { margin: 3px 0; font-size: 12px; color: #666; }
+</style>
+</head><body>
+<h1>Relatório Consolidado</h1>
+<div class="header-info">
+    <div>
+        <p><strong>Período:</strong> ${dataInicio || 'Início'} até ${dataFim || 'Atual'}</p>
+        <p><strong>Total de Relatórios:</strong> ${relatorios.length}</p>
+    </div>
+    <div>
+        <p><strong>Consolidação Geral:</strong> ${consolidacaoGeral}</p>
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-box vendas">
+        <h3>Total Vendas</h3>
+        <div class="valor">${totalVendas}</div>
+        <div class="porcentagem">${pctVendas}%</div>
+    </div>
+    <div class="summary-box aluguel">
+        <h3>Total Aluguel</h3>
+        <div class="valor">${totalAluguel}</div>
+        <div class="porcentagem">${pctAluguel}%</div>
+    </div>
+    <div class="summary-box corretores">
+        <h3>Total Corretores Externos</h3>
+        <div class="valor">${totalCorretores}</div>
+        <div class="porcentagem">${pctCorretores}%</div>
+    </div>
+</div>
+
+<h2>Gráfico de Acompanhamento Temporal</h2>
+<div class="chart-container">
+    <canvas id="lineChart"></canvas>
+</div>
+
+<h2>Detalhamento dos Relatórios</h2>
+<table><tr><th>Código</th><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores</th><th>Visitas OpenHouse</th></tr>`;
+    
+    relatorios.forEach(r => {
         const visitas = r.visitas ? r.visitas.map(v => v.corretor).join(', ') : '-';
         html += `<tr><td>${r.codigo || '-'}</td><td>${r.dataRelatorio || '-'}</td><td>${r.leadsVendas || 0}</td><td>${r.leadsAluguel || 0}</td><td>${r.corretoresExternos || 0}</td><td>${visitas}</td></tr>`;
     });
     
-    html += '</table>';
-    html += `<div class="summary">
-    <h3>Totais</h3>
-    <p><strong>Total Vendas:</strong> ${totalVendas}</p>
-    <p><strong>Total Aluguel:</strong> ${totalAluguel}</p>
-    <p><strong>Total Corretores:</strong> ${totalCorretores}</p>
-    <p><strong>Consolidação Geral:</strong> ${totalVendas + totalAluguel + totalCorretores}</p>
-</div></body></html>`;
+    html += `</table>
+<script>
+    const ctx = document.getElementById('lineChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ${JSON.stringify(labels)},
+            datasets: [
+                {
+                    label: 'Vendas',
+                    data: ${JSON.stringify(vendasData)},
+                    borderColor: '#00C853',
+                    backgroundColor: 'rgba(0, 200, 83, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Aluguel',
+                    data: ${JSON.stringify(aluguelData)},
+                    borderColor: '#FFD600',
+                    backgroundColor: 'rgba(255, 214, 0, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Corretores',
+                    data: ${JSON.stringify(corretoresData)},
+                    borderColor: '#D32F2F',
+                    backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+<\/script>
+</body></html>`;
     
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
-    win.print();
+    setTimeout(() => win.print(), 500);
 }
 
 async function exportarDados() {
