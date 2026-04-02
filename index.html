@@ -346,13 +346,22 @@ Processar Dados
 </div>
 </section>
 <section class="bg-primary/5 p-4 md:p-6 rounded-xl border border-primary/10">
-<h3 class="text-xs font-bold text-primary uppercase tracking-widest mb-3 md:mb-4">Meta Mensal</h3>
+<h3 class="text-xs font-bold text-primary uppercase tracking-widest mb-3 md:mb-4">Metas do Mês</h3>
+<div class="space-y-4">
+<div>
+<label class="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">META PREVISTA (LEADS VENDAS)</label>
+<input id="meta-prevista" type="number" value="100" class="w-full bg-white border border-primary/20 rounded-lg py-2 px-3 text-sm font-bold text-primary focus:ring-2 focus:ring-primary" onchange="processarDados()"/>
+</div>
 <div class="flex items-end gap-2 mb-2">
 <span id="meta-percentual" class="text-2xl md:text-3xl font-black text-primary">0%</span>
 <span class="text-xs text-primary/60 font-bold mb-1">concluída</span>
 </div>
 <div class="w-full bg-primary/10 h-1.5 rounded-full overflow-hidden">
 <div id="meta-barra" class="bg-primary h-full w-[0%]"></div>
+</div>
+<div class="text-[10px] text-outline mt-2">
+<span id="meta-progresso">0</span> / <span id="meta-total">100</span> leads vendidos
+</div>
 </div>
 </section>
 </div>
@@ -824,9 +833,14 @@ async function processarDados() {
     document.getElementById('total-aluguel-consolidado').textContent = totalAluguel;
     document.getElementById('total-corretores-consolidado').textContent = totalCorretores;
     
-    const percentual = Math.min(100, ((totalVendas + totalAluguel + totalCorretores) / 50) * 100);
+    const metaPrevista = parseInt(document.getElementById('meta-prevista').value) || 100;
+    const percentual = metaPrevista > 0 ? Math.min(100, (totalVendas / metaPrevista) * 100) : 0;
     document.getElementById('meta-percentual').textContent = Math.round(percentual) + '%';
     document.getElementById('meta-barra').style.width = percentual + '%';
+    document.getElementById('meta-progresso').textContent = totalVendas;
+    document.getElementById('meta-total').textContent = metaPrevista;
+    
+    localStorage.setItem('metaPrevista', metaPrevista);
     
     const labels = relatorios.map(r => r.dataRelatorio || 'N/A');
     const vendasData = relatorios.map(r => r.leadsVendas || 0);
@@ -1131,6 +1145,12 @@ async function iniciarAplicacao() {
     
     document.getElementById('data-inicio').value = primeiroDiaMes;
     document.getElementById('data-fim').value = ultimoDiaMes;
+    
+    const metaSalva = localStorage.getItem('metaPrevista');
+    if (metaSalva) {
+        document.getElementById('meta-prevista').value = metaSalva;
+    }
+    
     atualizarQuantificacao();
 }
 
