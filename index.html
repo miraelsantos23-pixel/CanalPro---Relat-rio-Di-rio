@@ -541,6 +541,11 @@ function limparTodosRelatorios() {
 }
 
 async function verificarDadosIniciais() {
+    const dadosIniciaisInseridos = localStorage.getItem('dadosIniciaisInseridos');
+    if (dadosIniciaisInseridos === 'true') {
+        return;
+    }
+    
     const relatorios = await buscarTodosRelatorios();
     if (relatorios.length === 0) {
         const relatoriosFicticios = [
@@ -624,6 +629,7 @@ async function verificarDadosIniciais() {
         for (const relatorio of relatoriosFicticios) {
             await salvarRelatorio(relatorio);
         }
+        localStorage.setItem('dadosIniciaisInseridos', 'true');
     }
 }
 
@@ -1055,6 +1061,7 @@ async function exportarDados() {
 async function limparDados() {
     if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
         await limparTodosRelatorios();
+        localStorage.setItem('dadosIniciaisInseridos', 'true');
         alert('Dados limpos com sucesso!');
         processarDados();
     }
