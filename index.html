@@ -87,6 +87,13 @@
         font-family: 'Inter', sans-serif;
         background-color: #faf8ff;
         overscroll-behavior: none;
+        text-transform: uppercase;
+    }
+    input, textarea, select {
+        text-transform: uppercase;
+    }
+    ::placeholder {
+        text-transform: uppercase;
     }
     .input-underlined {
         border: none;
@@ -418,6 +425,10 @@ Processar Dados
 <p class="text-xs text-outline font-medium">Distribuição de atendimentos consolidados</p>
 </div>
 <div class="flex flex-wrap items-center gap-3 md:gap-4">
+<div class="flex items-center gap-1.5 md:gap-2">
+<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: #003d9b;"></div>
+<span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Média</span>
+</div>
 <div class="flex items-center gap-1.5 md:gap-2">
 <div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: #00C853;"></div>
 <span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Vendas</span>
@@ -1113,6 +1124,8 @@ async function processarDados() {
     const aluguelData = relatorios.map(r => r.leadsAluguel || 0);
     const corretoresData = relatorios.map(r => r.corretoresExternos || 0);
     
+    const mediaVendas = vendasData.length > 0 ? vendasData.reduce((a, b) => a + b, 0) / vendasData.length : 0;
+    
     if (lineChart) lineChart.destroy();
     const ctx = document.getElementById('line-chart').getContext('2d');
     lineChart = new Chart(ctx, {
@@ -1120,6 +1133,16 @@ async function processarDados() {
         data: {
             labels: labels.length ? labels : ['Sem dados'],
             datasets: [
+                {
+                    label: 'Média Vendas',
+                    data: Array(labels.length).fill(mediaVendas),
+                    borderColor: '#003d9b',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0
+                },
                 {
                     label: 'Vendas',
                     data: vendasData.length ? vendasData : [0],
@@ -1274,6 +1297,10 @@ async function imprimirPDF() {
     const pctAluguel = consolidacaoGeral > 0 ? ((totalAluguel / consolidacaoGeral) * 100).toFixed(1) : 0;
     const pctCorretores = consolidacaoGeral > 0 ? ((totalCorretores / consolidacaoGeral) * 100).toFixed(1) : 0;
     
+    const mediaVendas = relatorios.length > 0 ? (totalVendas / relatorios.length).toFixed(1) : 0;
+    const mediaAluguel = relatorios.length > 0 ? (totalAluguel / relatorios.length).toFixed(1) : 0;
+    const mediaCorretores = relatorios.length > 0 ? (totalCorretores / relatorios.length).toFixed(1) : 0;
+    
     const datasOrdenadas = Object.keys(vendasPorDia).sort();
     const labels = datasOrdenadas.map(d => d.substring(5));
     const vendasData = datasOrdenadas.map(d => vendasPorDia[d]);
@@ -1324,16 +1351,19 @@ async function imprimirPDF() {
         <h3>Total Vendas</h3>
         <div class="valor">${totalVendas}</div>
         <div class="porcentagem">${pctVendas}%</div>
+        <div style="margin-top: 10px; font-size: 12px; color: #666;">Média: ${mediaVendas}</div>
     </div>
     <div class="summary-box aluguel">
         <h3>Total Aluguel</h3>
         <div class="valor">${totalAluguel}</div>
         <div class="porcentagem">${pctAluguel}%</div>
+        <div style="margin-top: 10px; font-size: 12px; color: #666;">Média: ${mediaAluguel}</div>
     </div>
     <div class="summary-box corretores">
         <h3>Total Corretores Externos</h3>
         <div class="valor">${totalCorretores}</div>
         <div class="porcentagem">${pctCorretores}%</div>
+        <div style="margin-top: 10px; font-size: 12px; color: #666;">Média: ${mediaCorretores}</div>
     </div>
 </div>
 
