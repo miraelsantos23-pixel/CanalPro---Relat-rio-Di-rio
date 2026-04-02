@@ -329,6 +329,13 @@ ULTIMO CONTATO DO DIA
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 mb-6 md:mb-8">
 <div class="lg:col-span-3 space-y-4 md:space-y-6 order-2 lg:order-1">
+<section class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] mb-4">
+<label class="block text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Buscar Relatório</label>
+<div class="relative">
+<input id="busca-relatorio" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 pl-9 pr-3 focus:ring-2 focus:ring-primary" placeholder="Código ou data..." type="text"/>
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
+</div>
+</section>
 <section class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] border-b-2 border-transparent focus-within:border-primary transition-all">
 <label class="block text-[10px] uppercase tracking-widest font-bold text-outline mb-3 md:mb-4">Período de Consolidação</label>
 <div class="space-y-3 md:space-y-4">
@@ -551,6 +558,7 @@ async function verificarDadosIniciais() {
         const relatoriosFicticios = [
             {
                 id: 1,
+                codigo: '0300001',
                 dataRelatorio: '2026-03-28',
                 primeiroContato: { data: '28/03/2026', horario: '08:30', nome: 'Carlos Silva' },
                 ultimoContato: { data: '28/03/2026', horario: '18:45', nome: 'Ana Costa' },
@@ -566,6 +574,7 @@ async function verificarDadosIniciais() {
             },
             {
                 id: 2,
+                codigo: '0300002',
                 dataRelatorio: '2026-03-29',
                 primeiroContato: { data: '29/03/2026', horario: '09:00', nome: 'Pedro Santos' },
                 ultimoContato: { data: '29/03/2026', horario: '17:30', nome: 'Maria Oliveira' },
@@ -581,6 +590,7 @@ async function verificarDadosIniciais() {
             },
             {
                 id: 3,
+                codigo: '0300003',
                 dataRelatorio: '2026-03-30',
                 primeiroContato: { data: '30/03/2026', horario: '08:15', nome: 'João Ferreira' },
                 ultimoContato: { data: '30/03/2026', horario: '19:00', nome: 'Juliana Lima' },
@@ -595,6 +605,7 @@ async function verificarDadosIniciais() {
             },
             {
                 id: 4,
+                codigo: '0300004',
                 dataRelatorio: '2026-03-31',
                 primeiroContato: { data: '31/03/2026', horario: '09:30', nome: 'Roberto Alves' },
                 ultimoContato: { data: '31/03/2026', horario: '18:00', nome: 'Carla Souza' },
@@ -611,6 +622,7 @@ async function verificarDadosIniciais() {
             },
             {
                 id: 5,
+                codigo: '0400001',
                 dataRelatorio: '2026-04-01',
                 primeiroContato: { data: '01/04/2026', horario: '08:00', nome: 'Marcos Dias' },
                 ultimoContato: { data: '01/04/2026', horario: '17:00', nome: 'Luciana Rodrigues' },
@@ -630,12 +642,32 @@ async function verificarDadosIniciais() {
             await salvarRelatorio(relatorio);
         }
         localStorage.setItem('dadosIniciaisInseridos', 'true');
+        localStorage.setItem('contadorRelatorios', 2);
     }
 }
 
 // ==================== FUNCTIONS ====================
 let lineChart = null;
 let donutChart = null;
+let contadorRelatorios = parseInt(localStorage.getItem('contadorRelatorios')) || 1;
+
+function gerarCodigoRelatorio(dataRelatorio) {
+    const mes = dataRelatorio.substring(5, 7);
+    const sequencia = String(contadorRelatorios).padStart(5, '0');
+    return `${mes}${sequencia}`;
+}
+
+async function buscarRelatorios() {
+    const relatorios = await buscarTodosRelatorios();
+    const maiorSequencia = relatorios.reduce((max, r) => {
+        const codigo = r.codigo || '';
+        const seq = parseInt(codigo.substring(2)) || 0;
+        return seq > max ? seq : max;
+    }, 0);
+    contadorRelatorios = maiorSequencia + 1;
+    localStorage.setItem('contadorRelatorios', contadorRelatorios);
+    return relatorios;
+}
 
 function adicionarVisita() {
     const container = document.getElementById('visitas-container');
@@ -696,9 +728,11 @@ document.getElementById('daily-form').addEventListener('submit', async function(
     
     const dataRelatorioInput = document.getElementById('data-relatorio').value;
     const dataRelatorioFormatada = normalizarData(dataRelatorioInput);
+    const codigoRelatorio = gerarCodigoRelatorio(dataRelatorioFormatada || new Date().toISOString().split('T')[0]);
     
     const relatorio = {
         id: Date.now(),
+        codigo: codigoRelatorio,
         dataRelatorio: dataRelatorioFormatada || new Date().toISOString().split('T')[0],
         primeiroContato: {
             data: normalizarData(document.getElementById('primeiro-contato-data').value),
@@ -720,7 +754,10 @@ document.getElementById('daily-form').addEventListener('submit', async function(
     
     await salvarRelatorio(relatorio);
     
-    alert('Relatório salvo com sucesso!');
+    contadorRelatorios++;
+    localStorage.setItem('contadorRelatorios', contadorRelatorios);
+    
+    alert('Relatório salvo com sucesso! Código: ' + codigoRelatorio);
     this.reset();
     atualizarQuantificacao();
     document.getElementById('visitas-container').innerHTML = `
@@ -802,15 +839,22 @@ function renderizarTimeline(relatorios) {
 async function processarDados() {
     const dataInicio = document.getElementById('data-inicio').value;
     const dataFim = document.getElementById('data-fim').value;
+    const termoBusca = document.getElementById('busca-relatorio').value.trim().toLowerCase();
     
     let relatorios = await buscarTodosRelatorios();
-    console.log('Relatórios encontrados:', relatorios.length);
-    console.log('Filtro:', dataInicio, 'até', dataFim);
     
     if (dataInicio && dataFim) {
         relatorios = relatorios.filter(r => {
             const data = r.dataRelatorio;
             return data >= dataInicio && data <= dataFim;
+        });
+    }
+    
+    if (termoBusca) {
+        relatorios = relatorios.filter(r => {
+            const codigo = (r.codigo || '').toLowerCase();
+            const data = (r.dataRelatorio || '').toLowerCase();
+            return codigo.includes(termoBusca) || data.includes(termoBusca);
         });
     }
     
@@ -974,6 +1018,7 @@ async function processarDados() {
 async function imprimirPDF() {
     const dataInicio = document.getElementById('data-inicio').value;
     const dataFim = document.getElementById('data-fim').value;
+    const termoBusca = document.getElementById('busca-relatorio').value.trim().toLowerCase();
     
     let relatorios = await buscarTodosRelatorios();
     
@@ -981,6 +1026,14 @@ async function imprimirPDF() {
         relatorios = relatorios.filter(r => {
             const data = r.dataRelatorio;
             return data >= dataInicio && data <= dataFim;
+        });
+    }
+    
+    if (termoBusca) {
+        relatorios = relatorios.filter(r => {
+            const codigo = (r.codigo || '').toLowerCase();
+            const data = (r.dataRelatorio || '').toLowerCase();
+            return codigo.includes(termoBusca) || data.includes(termoBusca);
         });
     }
     
@@ -1000,14 +1053,14 @@ async function imprimirPDF() {
     
     let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
     
-    html += '<table><tr><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores</th><th>Visitas OpenHouse</th></tr>';
+    html += '<table><tr><th>Código</th><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores</th><th>Visitas OpenHouse</th></tr>';
     
     relatorios.forEach(r => {
         totalVendas += r.leadsVendas || 0;
         totalAluguel += r.leadsAluguel || 0;
         totalCorretores += r.corretoresExternos || 0;
         const visitas = r.visitas ? r.visitas.map(v => v.corretor).join(', ') : '-';
-        html += `<tr><td>${r.dataRelatorio || '-'}</td><td>${r.leadsVendas || 0}</td><td>${r.leadsAluguel || 0}</td><td>${r.corretoresExternos || 0}</td><td>${visitas}</td></tr>`;
+        html += `<tr><td>${r.codigo || '-'}</td><td>${r.dataRelatorio || '-'}</td><td>${r.leadsVendas || 0}</td><td>${r.leadsAluguel || 0}</td><td>${r.corretoresExternos || 0}</td><td>${visitas}</td></tr>`;
     });
     
     html += '</table>';
@@ -1028,6 +1081,7 @@ async function imprimirPDF() {
 async function exportarDados() {
     const dataInicio = document.getElementById('data-inicio').value;
     const dataFim = document.getElementById('data-fim').value;
+    const termoBusca = document.getElementById('busca-relatorio').value.trim().toLowerCase();
     
     let relatorios = await buscarTodosRelatorios();
     
@@ -1038,7 +1092,16 @@ async function exportarDados() {
         });
     }
     
+    if (termoBusca) {
+        relatorios = relatorios.filter(r => {
+            const codigo = (r.codigo || '').toLowerCase();
+            const data = (r.dataRelatorio || '').toLowerCase();
+            return codigo.includes(termoBusca) || data.includes(termoBusca);
+        });
+    }
+    
     const dados = relatorios.map(r => ({
+        'Código': r.codigo,
         'Data do Relatório': r.dataRelatorio,
         'Primeiro Contato Data': r.primeiroContato?.data,
         'Primeiro Contato Hora': r.primeiroContato?.horario,
@@ -1105,11 +1168,17 @@ async function importarDados(event) {
         const sheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(sheet);
         
+        await buscarRelatorios();
+        
         let importados = 0;
         for (const row of jsonData) {
+            const dataRelatorio = row['Data do Relatório'] || new Date().toISOString().split('T')[0];
+            const codigo = gerarCodigoRelatorio(dataRelatorio);
+            
             const relatorio = {
                 id: Date.now() + Math.random(),
-                dataRelatorio: row['Data do Relatório'] || new Date().toISOString().split('T')[0],
+                codigo: codigo,
+                dataRelatorio: dataRelatorio,
                 primeiroContato: {
                     data: row['Primeiro Contato Data'] || '',
                     horario: row['Primeiro Contato Hora'] || '',
@@ -1129,8 +1198,11 @@ async function importarDados(event) {
             };
             
             await salvarRelatorio(relatorio);
+            contadorRelatorios++;
             importados++;
         }
+        
+        localStorage.setItem('contadorRelatorios', contadorRelatorios);
         
         alert(`${importados} relatórios importados com sucesso!`);
         processarDados();
@@ -1145,6 +1217,7 @@ async function importarDados(event) {
 async function iniciarAplicacao() {
     await abrirDB();
     await verificarDadosIniciais();
+    await buscarRelatorios();
     
     const hoje = new Date();
     const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
