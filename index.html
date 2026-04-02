@@ -419,15 +419,15 @@ Processar Dados
 </div>
 <div class="flex flex-wrap items-center gap-3 md:gap-4">
 <div class="flex items-center gap-1.5 md:gap-2">
-<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-primary"></div>
+<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: #00C853;"></div>
 <span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Vendas</span>
 </div>
 <div class="flex items-center gap-1.5 md:gap-2">
-<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-secondary"></div>
+<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: #FFD600;"></div>
 <span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Aluguel</span>
 </div>
 <div class="flex items-center gap-1.5 md:gap-2">
-<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-tertiary"></div>
+<div class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: #D32F2F;"></div>
 <span class="text-[9px] md:text-[10px] font-bold text-outline uppercase tracking-tighter">Externos</span>
 </div>
 </div>
@@ -1123,8 +1123,8 @@ async function processarDados() {
                 {
                     label: 'Vendas',
                     data: vendasData.length ? vendasData : [0],
-                    borderColor: '#003d9b',
-                    backgroundColor: 'rgba(0, 61, 155, 0.1)',
+                    borderColor: '#00C853',
+                    backgroundColor: 'rgba(0, 200, 83, 0.15)',
                     tension: 0.4,
                     fill: true,
                     pointRadius: window.innerWidth < 768 ? 3 : 4,
@@ -1133,8 +1133,8 @@ async function processarDados() {
                 {
                     label: 'Aluguel',
                     data: aluguelData.length ? aluguelData : [0],
-                    borderColor: '#4c5d8d',
-                    backgroundColor: 'rgba(76, 93, 141, 0.1)',
+                    borderColor: '#FFD600',
+                    backgroundColor: 'rgba(255, 214, 0, 0.15)',
                     tension: 0.4,
                     fill: true,
                     pointRadius: window.innerWidth < 768 ? 3 : 4,
@@ -1143,8 +1143,8 @@ async function processarDados() {
                 {
                     label: 'Corretores',
                     data: corretoresData.length ? corretoresData : [0],
-                    borderColor: '#8c000e',
-                    backgroundColor: 'rgba(140, 0, 14, 0.1)',
+                    borderColor: '#D32F2F',
+                    backgroundColor: 'rgba(211, 47, 47, 0.15)',
                     tension: 0.4,
                     fill: true,
                     pointRadius: window.innerWidth < 768 ? 3 : 4,
@@ -1217,7 +1217,7 @@ async function processarDados() {
             labels: ['Visitas'],
             datasets: [{
                 data: [totalVisitas || 1],
-                backgroundColor: ['#4c5d8d'],
+                backgroundColor: ['#00C853'],
                 borderWidth: 12,
                 borderColor: '#ededf8'
             }]
