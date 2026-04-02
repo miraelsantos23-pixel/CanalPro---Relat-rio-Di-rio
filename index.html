@@ -301,6 +301,11 @@ ULTIMO CONTATO DO DIA
 <p class="text-outline font-medium text-xs md:text-sm">Visão geral de desempenho operacional.</p>
 </div>
 <div class="flex flex-wrap gap-2 md:gap-3 w-full lg:w-auto no-print">
+<label class="flex-1 lg:flex-none items-center gap-2 px-4 md:px-5 py-2.5 bg-surface-container text-secondary font-bold rounded-xl hover:bg-surface-container-high transition-colors active:scale-95 duration-200 justify-center cursor-pointer">
+    <span class="material-symbols-outlined text-lg md:text-[20px]">file_upload</span>
+    <span class="text-sm">Importar</span>
+    <input type="file" id="import-file" accept=".xlsx,.xls" class="hidden" onchange="importarDados(event)"/>
+</label>
 <button onclick="imprimirPDF()" class="flex-1 lg:flex-none items-center gap-2 px-4 md:px-5 py-2.5 bg-surface-container-low text-primary font-bold rounded-xl hover:bg-surface-container-high transition-colors active:scale-95 duration-200 justify-center">
 <span class="material-symbols-outlined text-lg md:text-[20px]">print</span>
 <span class="text-sm">Imprimir</span>
@@ -912,7 +917,7 @@ async function processarDados() {
                         <p class="text-[9px] md:text-[10px] text-outline font-medium">CORRETOR OPENHOUSE</p>
                     </div>
                 </div>
-                <div class="text-right">
+                <div class="flex items-center gap-2">
                     <p class="text-sm font-black text-primary">${qtd} Visitas</p>
                 </div>
             `;
@@ -1038,6 +1043,80 @@ async function limparDados() {
         await limparTodosRelatorios();
         alert('Dados limpos com sucesso!');
         processarDados();
+    }
+}
+
+function excluirRelatorio(id) {
+    if (confirm('Tem certeza que deseja excluir este relatório?')) {
+        excluirPorId(id).then(() => {
+            alert('Relatório excluído!');
+            processarDados();
+        }).catch(err => {
+            console.error(err);
+            alert('Erro ao excluir relatório');
+        });
+    }
+}
+
+function excluirPorId(id) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!db) await abrirDB();
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            store.delete(id);
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+async function importarDados(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+        
+        let importados = 0;
+        for (const row of jsonData) {
+            const relatorio = {
+                id: Date.now() + Math.random(),
+                dataRelatorio: row['Data do Relatório'] || new Date().toISOString().split('T')[0],
+                primeiroContato: {
+                    data: row['Primeiro Contato Data'] || '',
+                    horario: row['Primeiro Contato Hora'] || '',
+                    nome: row['Primeiro Contato Nome'] || ''
+                },
+                ultimoContato: {
+                    data: row['Último Contato Data'] || '',
+                    horario: row['Último Contato Hora'] || '',
+                    nome: row['Último Contato Nome'] || ''
+                },
+                leadsVendas: parseInt(row['Leads Vendas']) || 0,
+                leadsAluguel: parseInt(row['Leads Aluguel']) || 0,
+                corretoresExternos: parseInt(row['Corretores Externos']) || 0,
+                visitas: row['Visitas OpenHouse'] ? row['Visitas OpenHouse'].split(';').map(v => ({ corretor: v.trim(), numero: '' })) : [],
+                observacao: '',
+                dataCriacao: new Date().toISOString()
+            };
+            
+            await salvarRelatorio(relatorio);
+            importados++;
+        }
+        
+        alert(`${importados} relatórios importados com sucesso!`);
+        processarDados();
+        event.target.value = '';
+    } catch (error) {
+        console.error('Erro ao importar:', error);
+        alert('Erro ao importar arquivo. Verifique o formato.');
     }
 }
 
