@@ -332,10 +332,23 @@ ULTIMO CONTATO DO DIA
 <section class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] mb-4">
 <label class="block text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Buscar Relatório</label>
 <div class="relative">
-<input id="busca-relatorio" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 pl-9 pr-3 focus:ring-2 focus:ring-primary" placeholder="Código ou data..." type="text"/>
+<input id="busca-relatorio" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 pl-9 pr-3 focus:ring-2 focus:ring-primary" placeholder="Código ou data..." type="text" onkeypress="if(event.key==='Enter') buscarRelatorio()"/>
 <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
 </div>
+<button onclick="buscarRelatorio()" class="w-full mt-3 py-2 bg-primary text-white font-bold rounded-lg text-sm hover:opacity-90 transition-all">
+Buscar
+</button>
 </section>
+
+<!-- Resultado da Busca -->
+<div id="resultado-busca" class="hidden bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] mb-4">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-bold text-primary">Resultado da Busca</h3>
+<button onclick="fecharBusca()" class="material-symbols-outlined text-outline hover:text-primary">close</button>
+</div>
+<div id="conteudo-busca"></div>
+</div>
+
 <section class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] border-b-2 border-transparent focus-within:border-primary transition-all">
 <label class="block text-[10px] uppercase tracking-widest font-bold text-outline mb-3 md:mb-4">Período de Consolidação</label>
 <div class="space-y-3 md:space-y-4">
@@ -667,6 +680,209 @@ async function buscarRelatorios() {
     contadorRelatorios = maiorSequencia + 1;
     localStorage.setItem('contadorRelatorios', contadorRelatorios);
     return relatorios;
+}
+
+async function buscarRelatorio() {
+    const termo = document.getElementById('busca-relatorio').value.trim().toLowerCase();
+    if (!termo) {
+        alert('Por favor, digite um código ou data para buscar.');
+        return;
+    }
+    
+    const relatorios = await buscarTodosRelatorios();
+    const encontrado = relatorios.find(r => {
+        const codigo = (r.codigo || '').toLowerCase();
+        const data = (r.dataRelatorio || '').toLowerCase();
+        return codigo === termo || data === termo;
+    });
+    
+    const container = document.getElementById('resultado-busca');
+    const conteudo = document.getElementById('conteudo-busca');
+    
+    if (!encontrado) {
+        container.classList.remove('hidden');
+        conteudo.innerHTML = '<p class="text-outline text-sm">Nenhum relatório encontrado com esse código ou data.</p>';
+        return;
+    }
+    
+    const visitasHtml = encontrado.visitas && encontrado.visitas.length > 0 
+        ? encontrado.visitas.map(v => `<div class="text-xs">• ${v.numero} - ${v.corretor}</div>`).join('')
+        : '<div class="text-xs text-outline">Nenhuma visita registrada</div>';
+    
+    conteudo.innerHTML = `
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <span class="text-[10px] font-bold text-outline uppercase">Código</span>
+                    <p class="text-sm font-bold text-primary">${encontrado.codigo}</p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-outline uppercase">Data</span>
+                    <p class="text-sm font-bold">${encontrado.dataRelatorio}</p>
+                </div>
+            </div>
+            
+            <div class="border-t border-outline-variant/20 pt-3">
+                <span class="text-[10px] font-bold text-outline uppercase">Primeiro Contato</span>
+                <div class="text-xs mt-1">Data: ${encontrado.primeiroContato?.data || '-'} | Hora: ${encontrado.primeiroContato?.horario || '-'} | Nome: ${encontrado.primeiroContato?.nome || '-'}</div>
+            </div>
+            
+            <div class="border-t border-outline-variant/20 pt-3">
+                <span class="text-[10px] font-bold text-outline uppercase">Último Contato</span>
+                <div class="text-xs mt-1">Data: ${encontrado.ultimoContato?.data || '-'} | Hora: ${encontrado.ultimoContato?.horario || '-'} | Nome: ${encontrado.ultimoContato?.nome || '-'}</div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2 border-t border-outline-variant/20 pt-3">
+                <div>
+                    <span class="text-[10px] font-bold text-outline uppercase">Vendas</span>
+                    <p class="text-lg font-black text-primary">${encontrado.leadsVendas || 0}</p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-outline uppercase">Aluguel</span>
+                    <p class="text-lg font-black text-primary">${encontrado.leadsAluguel || 0}</p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-outline uppercase">Corretores</span>
+                    <p class="text-lg font-black text-tertiary">${encontrado.corretoresExternos || 0}</p>
+                </div>
+            </div>
+            
+            <div class="border-t border-outline-variant/20 pt-3">
+                <span class="text-[10px] font-bold text-outline uppercase">Visitas OpenHouse</span>
+                <div class="mt-1">${visitasHtml}</div>
+            </div>
+            
+            <div class="border-t border-outline-variant/20 pt-3">
+                <span class="text-[10px] font-bold text-outline uppercase">Observação</span>
+                <p class="text-xs mt-1">${encontrado.observacao || 'Nenhuma observação'}</p>
+            </div>
+            
+            <div class="flex gap-2 mt-4">
+                <button onclick="editarRelatorio(${encontrado.id})" class="flex-1 py-2 bg-primary text-white font-bold rounded-lg text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                    Editar
+                </button>
+                <button onclick="excluirRelatorio(${encontrado.id})" class="flex-1 py-2 bg-tertiary text-white font-bold rounded-lg text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-sm">delete</span>
+                    Excluir
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.classList.remove('hidden');
+}
+
+function fecharBusca() {
+    document.getElementById('resultado-busca').classList.add('hidden');
+    document.getElementById('busca-relatorio').value = '';
+}
+
+let relatorioEditando = null;
+
+function editarRelatorio(id) {
+    buscarTodosRelatorios().then(relatorios => {
+        const relatorio = relatorios.find(r => r.id === id);
+        if (!relatorio) return;
+        
+        relatorioEditando = relatorio;
+        
+        const container = document.getElementById('conteudo-busca');
+        container.innerHTML = `
+            <form id="form-editar-relatorio" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-outline uppercase">Código</label>
+                        <input value="${relatorio.codigo}" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3" disabled/>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-outline uppercase">Data</label>
+                        <input id="edit-data" value="${relatorio.dataRelatorio}" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3 focus:ring-2 focus:ring-primary" type="date"/>
+                    </div>
+                </div>
+                
+                <div class="border-t border-outline-variant/20 pt-3">
+                    <span class="text-[10px] font-bold text-outline uppercase">Primeiro Contato</span>
+                    <div class="grid grid-cols-3 gap-2 mt-1">
+                        <input id="edit-primeiro-data" value="${relatorio.primeiroContato?.data || ''}" placeholder="Data" class="bg-surface-container-low border-none rounded-lg text-xs py-2 px-2"/>
+                        <input id="edit-primeiro-horario" value="${relatorio.primeiroContato?.horario || ''}" placeholder="Hora" class="bg-surface-container-low border-none rounded-lg text-xs py-2 px-2"/>
+                        <input id="edit-primeiro-nome" value="${relatorio.primeiroContato?.nome || ''}" placeholder="Nome" class="bg-surface-container-low border-none rounded-lg text-xs py-2 px-2"/>
+                    </div>
+                </div>
+                
+                <div class="border-t border-outline-variant/20 pt-3">
+                    <span class="text-[10px] font-bold text-outline uppercase">Último Contato</span>
+                    <div class="grid grid-cols-3 gap-2 mt-1">
+                        <input id="edit-ultimo-data" value="${relatorio.ultimoContato?.data || ''}" placeholder="Data" class="bg-surface-container-low border-none rounded-lg text-xs py-2 px-2"/>
+                        <input id="edit-ultimo-horario" value="${relatorio.ultimoContato?.horario || ''}" placeholder="Hora" class="bg-surface-container-low border-none rounded-lg text-xs py-2 px-2"/>
+                        <input id="edit-ultimo-nome" value="${relatorio.ultimoContato?.nome || ''}" placeholder="Nome" class="bg-surface-container-low border-none rounded-lg text-xs py-2 px-2"/>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-2 border-t border-outline-variant/20 pt-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-outline uppercase">Vendas</label>
+                        <input id="edit-vendas" type="number" value="${relatorio.leadsVendas || 0}" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3 font-bold text-primary"/>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-outline uppercase">Aluguel</label>
+                        <input id="edit-aluguel" type="number" value="${relatorio.leadsAluguel || 0}" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3 font-bold text-primary"/>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-outline uppercase">Corretores</label>
+                        <input id="edit-corretores" type="number" value="${relatorio.corretoresExternos || 0}" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3 font-bold text-tertiary"/>
+                    </div>
+                </div>
+                
+                <div class="border-t border-outline-variant/20 pt-3">
+                    <label class="text-[10px] font-bold text-outline uppercase">Observação</label>
+                    <textarea id="edit-observacao" rows="3" class="w-full bg-surface-container-low border-none rounded-lg text-sm py-2 px-3 mt-1">${relatorio.observacao || ''}</textarea>
+                </div>
+                
+                <div class="flex gap-2 mt-4">
+                    <button type="button" onclick="salvarEdicao(${relatorio.id})" class="flex-1 py-2 bg-primary text-white font-bold rounded-lg text-sm hover:opacity-90 transition-all">
+                        Salvar Alterações
+                    </button>
+                    <button type="button" onclick="buscarRelatorio()" class="flex-1 py-2 bg-surface-container text-outline font-bold rounded-lg text-sm hover:bg-surface-container-high transition-all">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        `;
+    });
+}
+
+async function salvarEdicao(id) {
+    const visitas = relatorioEditando.visitas || [];
+    
+    const relatorioAtualizado = {
+        id: id,
+        codigo: document.getElementById('form-editar-relatorio').querySelector('input[disabled]').value,
+        dataRelatorio: document.getElementById('edit-data').value,
+        primeiroContato: {
+            data: document.getElementById('edit-primeiro-data').value,
+            horario: document.getElementById('edit-primeiro-horario').value,
+            nome: document.getElementById('edit-primeiro-nome').value
+        },
+        ultimoContato: {
+            data: document.getElementById('edit-ultimo-data').value,
+            horario: document.getElementById('edit-ultimo-horario').value,
+            nome: document.getElementById('edit-ultimo-nome').value
+        },
+        leadsVendas: parseInt(document.getElementById('edit-vendas').value) || 0,
+        leadsAluguel: parseInt(document.getElementById('edit-aluguel').value) || 0,
+        corretoresExternos: parseInt(document.getElementById('edit-corretores').value) || 0,
+        visitas: visitas,
+        observacao: document.getElementById('edit-observacao').value,
+        dataCriacao: relatorioEditando.dataCriacao
+    };
+    
+    await excluirPorId(id);
+    await salvarRelatorio(relatorioAtualizado);
+    
+    alert('Relatório atualizado com sucesso!');
+    buscarRelatorio();
+    processarDados();
 }
 
 function adicionarVisita() {
