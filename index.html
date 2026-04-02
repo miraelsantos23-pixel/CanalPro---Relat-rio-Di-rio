@@ -844,6 +844,87 @@ const hoje = new Date();
 const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
 const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
 
+if (!localStorage.getItem('relatorios')) {
+    const relatoriosFicticios = [
+        {
+            id: 1,
+            dataRelatorio: '2026-03-28',
+            primeiroContato: { data: '28/03/2026', horario: '08:30', nome: 'Carlos Silva' },
+            ultimoContato: { data: '28/03/2026', horario: '18:45', nome: 'Ana Costa' },
+            leadsVendas: 12,
+            leadsAluguel: 8,
+            corretoresExternos: 5,
+            visitas: [
+                { numero: 'AT-0001', corretor: 'Ricardo Soares' },
+                { numero: 'AT-0002', corretor: 'Ana Mendes' }
+            ],
+            observacao: 'Dia movimentado com boa procura por imóveis comerciais.',
+            dataCriacao: '2026-03-28T10:00:00.000Z'
+        },
+        {
+            id: 2,
+            dataRelatorio: '2026-03-29',
+            primeiroContato: { data: '29/03/2026', horario: '09:00', nome: 'Pedro Santos' },
+            ultimoContato: { data: '29/03/2026', horario: '17:30', nome: 'Maria Oliveira' },
+            leadsVendas: 15,
+            leadsAluguel: 10,
+            corretoresExternos: 7,
+            visitas: [
+                { numero: 'AT-0003', corretor: 'Ricardo Soares' },
+                { numero: 'AT-0004', corretor: 'Fabio Bueno' }
+            ],
+            observacao: 'Novos empreendimentos geraram bastante interesse.',
+            dataCriacao: '2026-03-29T09:30:00.000Z'
+        },
+        {
+            id: 3,
+            dataRelatorio: '2026-03-30',
+            primeiroContato: { data: '30/03/2026', horario: '08:15', nome: 'João Ferreira' },
+            ultimoContato: { data: '30/03/2026', horario: '19:00', nome: 'Juliana Lima' },
+            leadsVendas: 8,
+            leadsAluguel: 14,
+            corretoresExternos: 4,
+            visitas: [
+                { numero: 'AT-0005', corretor: 'Ana Mendes' }
+            ],
+            observacao: 'Aluguel teve alta procura neste dia.',
+            dataCriacao: '2026-03-30T11:00:00.000Z'
+        },
+        {
+            id: 4,
+            dataRelatorio: '2026-03-31',
+            primeiroContato: { data: '31/03/2026', horario: '09:30', nome: 'Roberto Alves' },
+            ultimoContato: { data: '31/03/2026', horario: '18:00', nome: 'Carla Souza' },
+            leadsVendas: 20,
+            leadsAluguel: 6,
+            corretoresExternos: 9,
+            visitas: [
+                { numero: 'AT-0006', corretor: 'Ricardo Soares' },
+                { numero: 'AT-0007', corretor: 'Fabio Bueno' },
+                { numero: 'AT-0008', corretor: 'Ana Mendes' }
+            ],
+            observacao: 'Final de mês com resultados excelente em vendas.',
+            dataCriacao: '2026-03-31T14:00:00.000Z'
+        },
+        {
+            id: 5,
+            dataRelatorio: '2026-04-01',
+            primeiroContato: { data: '01/04/2026', horario: '08:00', nome: 'Marcos Dias' },
+            ultimoContato: { data: '01/04/2026', horario: '17:00', nome: 'Luciana Rodrigues' },
+            leadsVendas: 10,
+            leadsAluguel: 12,
+            corretoresExternos: 6,
+            visitas: [
+                { numero: 'AT-0009', corretor: 'Fabio Bueno' },
+                { numero: 'AT-0010', corretor: 'Ana Mendes' }
+            ],
+            observacao: 'Início de mês equilibrado entre vendas e aluguel.',
+            dataCriacao: '2026-04-01T08:30:00.000Z'
+        }
+    ];
+    localStorage.setItem('relatorios', JSON.stringify(relatoriosFicticios));
+}
+
 document.getElementById('data-inicio').value = primeiroDiaMes;
 document.getElementById('data-fim').value = ultimoDiaMes;
 atualizarQuantificacao();
