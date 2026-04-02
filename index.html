@@ -585,13 +585,17 @@ function processarDados() {
     const dataFim = document.getElementById('data-fim').value;
     
     let relatorios = JSON.parse(localStorage.getItem('relatorios') || '[]');
+    console.log('Relatórios encontrados:', relatorios.length);
+    console.log('Filtro: ', dataInicio, 'até', dataFim);
     
     if (dataInicio && dataFim) {
         relatorios = relatorios.filter(r => {
             const data = r.dataRelatorio;
+            console.log('Verificando data:', data, '>=', dataInicio, '<=', dataFim);
             return data >= dataInicio && data <= dataFim;
         });
     }
+    console.log('Relatórios após filtro:', relatorios.length);
     
     let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
     const corretoresVisitas = {};
@@ -844,7 +848,8 @@ const hoje = new Date();
 const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
 const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
 
-if (!localStorage.getItem('relatorios')) {
+const relatoriosExistentes = JSON.parse(localStorage.getItem('relatorios') || '[]');
+if (relatoriosExistentes.length === 0) {
     const relatoriosFicticios = [
         {
             id: 1,
