@@ -82,9 +82,6 @@
     }
     html {
         -webkit-text-size-adjust: 100%;
-        -moz-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
-        text-size-adjust: 100%;
     }
     body {
         font-family: 'Inter', sans-serif;
@@ -127,31 +124,24 @@
     @media print {
         .no-print { display: none !important; }
         body { background: white; }
-        .print-break { page-break-before: always; }
         nav { display: none !important; }
     }
     @media (max-width: 380px) {
         .text-4xl { font-size: 2rem; }
         .text-3xl { font-size: 1.75rem; }
-        .text-2xl { font-size: 1.5rem; }
-        .px-6 { padding-left: 1rem; padding-right: 1rem; }
-        .p-6 { padding: 1rem; }
     }
     .visita-item {
         animation: slideIn 0.3s ease;
     }
     @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-    .remove-btn {
-        touch-action: manipulation;
+    .timeline-bar {
+        transition: all 0.3s ease;
+    }
+    .timeline-bar:hover {
+        transform: scaleY(1.1);
     }
 </style>
 </head>
@@ -161,11 +151,10 @@
 <header class="fixed top-0 left-0 right-0 z-50 bg-[#faf8ff]/95 backdrop-blur-md shadow-[0px_2px_10px_rgba(25,27,35,0.06)] h-14 md:h-16 flex justify-between items-center px-3 md:px-6">
 <div class="flex items-center gap-2 md:gap-3">
 <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-[10px] md:text-xs font-bold">EP</div>
-<span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23] hidden xs:inline">Precision Curator</span>
-<span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23] xs:hidden">PC</span>
+<span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23]">Precision Curator</span>
 </div>
 <div class="flex items-center gap-2 md:gap-4">
-<span class="material-symbols-outlined text-[#737685] hover:bg-[#ededf8] p-1.5 md:p-2 rounded-lg transition-colors cursor-pointer text-xl md:text-2xl">settings</span>
+<button onclick="limparDados()" class="material-symbols-outlined text-[#737685] hover:bg-[#ededf8] p-1.5 md:p-2 rounded-lg transition-colors cursor-pointer text-xl md:text-2xl" title="Limpar dados">delete_sweep</button>
 </div>
 </header>
 
@@ -323,6 +312,16 @@ ULTIMO CONTATO DO DIA
 </div>
 </div>
 
+<!-- Timeline Mensal -->
+<section class="bg-surface-container-lowest p-4 md:p-6 rounded-xl md:rounded-2xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] mb-6 md:mb-8">
+<div class="flex items-center justify-between mb-4 md:mb-6">
+<h3 class="text-base md:text-lg font-bold text-on-surface">Relatórios por Mês</h3>
+<span class="text-xs text-outline">Total: <span id="total-relatorios-mensal">0</span> relatórios</span>
+</div>
+<div id="timeline-container" class="flex items-end justify-between gap-2 md:gap-4 h-24 md:h-32 px-2">
+</div>
+</section>
+
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 mb-6 md:mb-8">
 <div class="lg:col-span-3 space-y-4 md:space-y-6 order-2 lg:order-1">
 <section class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0px_4px_20px_rgba(25,27,35,0.04)] border-b-2 border-transparent focus-within:border-primary transition-all">
@@ -455,6 +454,166 @@ Processar Dados
 </div>
 
 <script>
+// ==================== BANCO DE DADOS INDEXEDDB ====================
+const DB_NAME = 'CanalProDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'relatorios';
+
+let db = null;
+
+function abrirDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            db = request.result;
+            resolve(db);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const database = event.target.result;
+            if (!database.objectStoreNames.contains(STORE_NAME)) {
+                database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+        };
+    });
+}
+
+function salvarRelatorio(relatorio) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!db) await abrirDB();
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            store.add(relatorio);
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+function buscarTodosRelatorios() {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!db) await abrirDB();
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        } catch (error) {
+            reject(error);
+        }
+        }
+    );
+}
+
+function limparTodosRelatorios() {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!db) await abrirDB();
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            store.clear();
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+async function verificarDadosIniciais() {
+    const relatorios = await buscarTodosRelatorios();
+    if (relatorios.length === 0) {
+        const relatoriosFicticios = [
+            {
+                id: 1,
+                dataRelatorio: '2026-03-28',
+                primeiroContato: { data: '28/03/2026', horario: '08:30', nome: 'Carlos Silva' },
+                ultimoContato: { data: '28/03/2026', horario: '18:45', nome: 'Ana Costa' },
+                leadsVendas: 12,
+                leadsAluguel: 8,
+                corretoresExternos: 5,
+                visitas: [
+                    { numero: 'AT-0001', corretor: 'Ricardo Soares' },
+                    { numero: 'AT-0002', corretor: 'Ana Mendes' }
+                ],
+                observacao: 'Dia movimentado com boa procura por imóveis comerciais.',
+                dataCriacao: '2026-03-28T10:00:00.000Z'
+            },
+            {
+                id: 2,
+                dataRelatorio: '2026-03-29',
+                primeiroContato: { data: '29/03/2026', horario: '09:00', nome: 'Pedro Santos' },
+                ultimoContato: { data: '29/03/2026', horario: '17:30', nome: 'Maria Oliveira' },
+                leadsVendas: 15,
+                leadsAluguel: 10,
+                corretoresExternos: 7,
+                visitas: [
+                    { numero: 'AT-0003', corretor: 'Ricardo Soares' },
+                    { numero: 'AT-0004', corretor: 'Fabio Bueno' }
+                ],
+                observacao: 'Novos empreendimentos geraram bastante interesse.',
+                dataCriacao: '2026-03-29T09:30:00.000Z'
+            },
+            {
+                id: 3,
+                dataRelatorio: '2026-03-30',
+                primeiroContato: { data: '30/03/2026', horario: '08:15', nome: 'João Ferreira' },
+                ultimoContato: { data: '30/03/2026', horario: '19:00', nome: 'Juliana Lima' },
+                leadsVendas: 8,
+                leadsAluguel: 14,
+                corretoresExternos: 4,
+                visitas: [
+                    { numero: 'AT-0005', corretor: 'Ana Mendes' }
+                ],
+                observacao: 'Aluguel teve alta procura neste dia.',
+                dataCriacao: '2026-03-30T11:00:00.000Z'
+            },
+            {
+                id: 4,
+                dataRelatorio: '2026-03-31',
+                primeiroContato: { data: '31/03/2026', horario: '09:30', nome: 'Roberto Alves' },
+                ultimoContato: { data: '31/03/2026', horario: '18:00', nome: 'Carla Souza' },
+                leadsVendas: 20,
+                leadsAluguel: 6,
+                corretoresExternos: 9,
+                visitas: [
+                    { numero: 'AT-0006', corretor: 'Ricardo Soares' },
+                    { numero: 'AT-0007', corretor: 'Fabio Bueno' },
+                    { numero: 'AT-0008', corretor: 'Ana Mendes' }
+                ],
+                observacao: 'Final de mês com resultados excelente em vendas.',
+                dataCriacao: '2026-03-31T14:00:00.000Z'
+            },
+            {
+                id: 5,
+                dataRelatorio: '2026-04-01',
+                primeiroContato: { data: '01/04/2026', horario: '08:00', nome: 'Marcos Dias' },
+                ultimoContato: { data: '01/04/2026', horario: '17:00', nome: 'Luciana Rodrigues' },
+                leadsVendas: 10,
+                leadsAluguel: 12,
+                corretoresExternos: 6,
+                visitas: [
+                    { numero: 'AT-0009', corretor: 'Fabio Bueno' },
+                    { numero: 'AT-0010', corretor: 'Ana Mendes' }
+                ],
+                observacao: 'Início de mês equilibrado entre vendas e aluguel.',
+                dataCriacao: '2026-04-01T08:30:00.000Z'
+            }
+        ];
+        
+        for (const relatorio of relatoriosFicticios) {
+            await salvarRelatorio(relatorio);
+        }
+    }
+}
+
+// ==================== FUNCTIONS ====================
 let lineChart = null;
 let donutChart = null;
 
@@ -471,7 +630,7 @@ function adicionarVisita() {
             <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">CORRETOR OPENHOUSE</label>
             <input class="w-full input-underlined py-1.5 md:py-2 text-sm corretor-openhouse" placeholder="Nome do corretor" type="text"/>
         </div>
-        <button type="button" onclick="this.parentElement.remove()" class="text-xs text-tertiary hover:text-red-700 remove-btn py-1">Remover</button>
+        <button type="button" onclick="this.parentElement.remove()" class="text-xs text-tertiary hover:text-red-700 py-1">Remover</button>
     `;
     container.appendChild(div);
     div.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -492,7 +651,18 @@ document.getElementById('leads-vendas').addEventListener('input', atualizarQuant
 document.getElementById('leads-aluguel').addEventListener('input', atualizarQuantificacao);
 document.getElementById('corretores-externos').addEventListener('input', atualizarQuantificacao);
 
-document.getElementById('daily-form').addEventListener('submit', function(e) {
+function normalizarData(dataStr) {
+    if (!dataStr) return '';
+    if (dataStr.includes('/')) {
+        const partes = dataStr.split('/');
+        if (partes.length === 3) {
+            return `${partes[2]}-${partes[1]}-${partes[0]}`;
+        }
+    }
+    return dataStr;
+}
+
+document.getElementById('daily-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const visitas = [];
@@ -503,17 +673,6 @@ document.getElementById('daily-form').addEventListener('submit', function(e) {
             visitas.push({ numero, corretor });
         }
     });
-    
-    function normalizarData(dataStr) {
-        if (!dataStr) return '';
-        if (dataStr.includes('/')) {
-            const partes = dataStr.split('/');
-            if (partes.length === 3) {
-                return `${partes[2]}-${partes[1]}-${partes[0]}`;
-            }
-        }
-        return dataStr;
-    }
     
     const dataRelatorioInput = document.getElementById('data-relatorio').value;
     const dataRelatorioFormatada = normalizarData(dataRelatorioInput);
@@ -539,9 +698,7 @@ document.getElementById('daily-form').addEventListener('submit', function(e) {
         dataCriacao: new Date().toISOString()
     };
     
-    let relatorios = JSON.parse(localStorage.getItem('relatorios') || '[]');
-    relatorios.push(relatorio);
-    localStorage.setItem('relatorios', JSON.stringify(relatorios));
+    await salvarRelatorio(relatorio);
     
     alert('Relatório salvo com sucesso!');
     this.reset();
@@ -580,22 +737,64 @@ function mostrarPagina(pagina) {
     }
 }
 
-function processarDados() {
+function renderizarTimeline(relatorios) {
+    const container = document.getElementById('timeline-container');
+    const meses = {};
+    
+    relatorios.forEach(r => {
+        if (r.dataRelatorio) {
+            const mes = r.dataRelatorio.substring(0, 7);
+            meses[mes] = (meses[mes] || 0) + 1;
+        }
+    });
+    
+    const mesesOrdenados = Object.keys(meses).sort();
+    const total = relatorios.length;
+    document.getElementById('total-relatorios-mensal').textContent = total;
+    
+    container.innerHTML = '';
+    
+    if (mesesOrdenados.length === 0) {
+        container.innerHTML = '<p class="text-outline text-sm w-full text-center">Nenhum relatório encontrado</p>';
+        return;
+    }
+    
+    const maxCount = Math.max(...Object.values(meses), 1);
+    
+    mesesOrdenados.forEach(mes => {
+        const count = meses[mes];
+        const height = (count / maxCount) * 100;
+        const [ano, mesNum] = mes.split('-');
+        const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const nomeMes = nomesMeses[parseInt(mesNum) - 1];
+        
+        const bar = document.createElement('div');
+        bar.className = 'timeline-bar flex-1 flex flex-col items-center justify-end h-full';
+        bar.innerHTML = `
+            <div class="w-full max-w-12 bg-primary rounded-t-md timeline-bar" style="height: ${height}%" title="${count} relatórios"></div>
+            <div class="text-[8px] md:text-[10px] text-outline mt-1">${nomeMes}/${ano.slice(2)}</div>
+            <div class="text-[9px] md:text-[11px] font-bold text-primary">${count}</div>
+        `;
+        container.appendChild(bar);
+    });
+}
+
+async function processarDados() {
     const dataInicio = document.getElementById('data-inicio').value;
     const dataFim = document.getElementById('data-fim').value;
     
-    let relatorios = JSON.parse(localStorage.getItem('relatorios') || '[]');
+    let relatorios = await buscarTodosRelatorios();
     console.log('Relatórios encontrados:', relatorios.length);
-    console.log('Filtro: ', dataInicio, 'até', dataFim);
+    console.log('Filtro:', dataInicio, 'até', dataFim);
     
     if (dataInicio && dataFim) {
         relatorios = relatorios.filter(r => {
             const data = r.dataRelatorio;
-            console.log('Verificando data:', data, '>=', dataInicio, '<=', dataFim);
             return data >= dataInicio && data <= dataFim;
         });
     }
-    console.log('Relatórios após filtro:', relatorios.length);
+    
+    renderizarTimeline(await buscarTodosRelatorios());
     
     let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
     const corretoresVisitas = {};
@@ -681,9 +880,7 @@ function processarDados() {
             scales: {
                 y: { 
                     beginAtZero: true,
-                    ticks: {
-                        font: { size: window.innerWidth < 768 ? 9 : 11 }
-                    }
+                    ticks: { font: { size: window.innerWidth < 768 ? 9 : 11 } }
                 },
                 x: {
                     ticks: {
@@ -692,10 +889,7 @@ function processarDados() {
                     }
                 }
             },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            }
+            interaction: { intersect: false, mode: 'index' }
         }
     });
     
@@ -747,18 +941,16 @@ function processarDados() {
             responsive: true,
             maintainAspectRatio: true,
             cutout: '70%',
-            plugins: {
-                legend: { display: false }
-            }
+            plugins: { legend: { display: false } }
         }
     });
 }
 
-function imprimirPDF() {
+async function imprimirPDF() {
     const dataInicio = document.getElementById('data-inicio').value;
     const dataFim = document.getElementById('data-fim').value;
     
-    let relatorios = JSON.parse(localStorage.getItem('relatorios') || '[]');
+    let relatorios = await buscarTodosRelatorios();
     
     if (dataInicio && dataFim) {
         relatorios = relatorios.filter(r => {
@@ -770,15 +962,12 @@ function imprimirPDF() {
     let html = `<!DOCTYPE html>
 <html><head><title>Relatório Consolidado</title>
 <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 100%; overflow-x: hidden; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 100%; }
     h1 { color: #003d9b; font-size: 24px; }
     table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     th { background: #003d9b; color: white; }
     .summary { background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 8px; }
-    @media print {
-        body { -webkit-print-color-adjust: exact; }
-    }
 </style>
 </head><body>
 <h1>Relatório Consolidado</h1>
@@ -811,11 +1000,11 @@ function imprimirPDF() {
     win.print();
 }
 
-function exportarDados() {
+async function exportarDados() {
     const dataInicio = document.getElementById('data-inicio').value;
     const dataFim = document.getElementById('data-fim').value;
     
-    let relatorios = JSON.parse(localStorage.getItem('relatorios') || '[]');
+    let relatorios = await buscarTodosRelatorios();
     
     if (dataInicio && dataFim) {
         relatorios = relatorios.filter(r => {
@@ -844,95 +1033,29 @@ function exportarDados() {
     XLSX.writeFile(wb, `relatorio_consolidado_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
-const hoje = new Date();
-const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
-const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
-
-const relatoriosExistentes = JSON.parse(localStorage.getItem('relatorios') || '[]');
-if (relatoriosExistentes.length === 0) {
-    const relatoriosFicticios = [
-        {
-            id: 1,
-            dataRelatorio: '2026-03-28',
-            primeiroContato: { data: '28/03/2026', horario: '08:30', nome: 'Carlos Silva' },
-            ultimoContato: { data: '28/03/2026', horario: '18:45', nome: 'Ana Costa' },
-            leadsVendas: 12,
-            leadsAluguel: 8,
-            corretoresExternos: 5,
-            visitas: [
-                { numero: 'AT-0001', corretor: 'Ricardo Soares' },
-                { numero: 'AT-0002', corretor: 'Ana Mendes' }
-            ],
-            observacao: 'Dia movimentado com boa procura por imóveis comerciais.',
-            dataCriacao: '2026-03-28T10:00:00.000Z'
-        },
-        {
-            id: 2,
-            dataRelatorio: '2026-03-29',
-            primeiroContato: { data: '29/03/2026', horario: '09:00', nome: 'Pedro Santos' },
-            ultimoContato: { data: '29/03/2026', horario: '17:30', nome: 'Maria Oliveira' },
-            leadsVendas: 15,
-            leadsAluguel: 10,
-            corretoresExternos: 7,
-            visitas: [
-                { numero: 'AT-0003', corretor: 'Ricardo Soares' },
-                { numero: 'AT-0004', corretor: 'Fabio Bueno' }
-            ],
-            observacao: 'Novos empreendimentos geraram bastante interesse.',
-            dataCriacao: '2026-03-29T09:30:00.000Z'
-        },
-        {
-            id: 3,
-            dataRelatorio: '2026-03-30',
-            primeiroContato: { data: '30/03/2026', horario: '08:15', nome: 'João Ferreira' },
-            ultimoContato: { data: '30/03/2026', horario: '19:00', nome: 'Juliana Lima' },
-            leadsVendas: 8,
-            leadsAluguel: 14,
-            corretoresExternos: 4,
-            visitas: [
-                { numero: 'AT-0005', corretor: 'Ana Mendes' }
-            ],
-            observacao: 'Aluguel teve alta procura neste dia.',
-            dataCriacao: '2026-03-30T11:00:00.000Z'
-        },
-        {
-            id: 4,
-            dataRelatorio: '2026-03-31',
-            primeiroContato: { data: '31/03/2026', horario: '09:30', nome: 'Roberto Alves' },
-            ultimoContato: { data: '31/03/2026', horario: '18:00', nome: 'Carla Souza' },
-            leadsVendas: 20,
-            leadsAluguel: 6,
-            corretoresExternos: 9,
-            visitas: [
-                { numero: 'AT-0006', corretor: 'Ricardo Soares' },
-                { numero: 'AT-0007', corretor: 'Fabio Bueno' },
-                { numero: 'AT-0008', corretor: 'Ana Mendes' }
-            ],
-            observacao: 'Final de mês com resultados excelente em vendas.',
-            dataCriacao: '2026-03-31T14:00:00.000Z'
-        },
-        {
-            id: 5,
-            dataRelatorio: '2026-04-01',
-            primeiroContato: { data: '01/04/2026', horario: '08:00', nome: 'Marcos Dias' },
-            ultimoContato: { data: '01/04/2026', horario: '17:00', nome: 'Luciana Rodrigues' },
-            leadsVendas: 10,
-            leadsAluguel: 12,
-            corretoresExternos: 6,
-            visitas: [
-                { numero: 'AT-0009', corretor: 'Fabio Bueno' },
-                { numero: 'AT-0010', corretor: 'Ana Mendes' }
-            ],
-            observacao: 'Início de mês equilibrado entre vendas e aluguel.',
-            dataCriacao: '2026-04-01T08:30:00.000Z'
-        }
-    ];
-    localStorage.setItem('relatorios', JSON.stringify(relatoriosFicticios));
+async function limparDados() {
+    if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+        await limparTodosRelatorios();
+        alert('Dados limpos com sucesso!');
+        processarDados();
+    }
 }
 
-document.getElementById('data-inicio').value = primeiroDiaMes;
-document.getElementById('data-fim').value = ultimoDiaMes;
-atualizarQuantificacao();
+// ==================== INICIALIZAÇÃO ====================
+async function iniciarAplicacao() {
+    await abrirDB();
+    await verificarDadosIniciais();
+    
+    const hoje = new Date();
+    const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+    const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+    
+    document.getElementById('data-inicio').value = primeiroDiaMes;
+    document.getElementById('data-fim').value = ultimoDiaMes;
+    atualizarQuantificacao();
+}
+
+iniciarAplicacao();
 
 window.addEventListener('resize', function() {
     if (!document.getElementById('dashboard-page').classList.contains('hidden')) {
