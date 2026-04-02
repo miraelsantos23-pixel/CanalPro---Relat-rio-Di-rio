@@ -150,6 +150,39 @@
     .timeline-bar:hover {
         transform: scaleY(1.1);
     }
+    /* Dark Mode Styles */
+    .dark body { background-color: #121212; }
+    .dark { --bg-color: #1e1e1e; --text-color: #e0e0e0; --card-bg: #2d2d2d; }
+    .dark body, .dark .text-on-surface { color: #e0e0e0; }
+    .dark header, .dark nav { background-color: #1e1e1e !important; }
+    .dark .bg-surface-container-low { background-color: #2d2d2d; }
+    .dark .bg-surface-container-lowest { background-color: #252525; }
+    .dark .bg-surface-container { background-color: #333333; }
+    .dark .input-underlined { background-color: #2d2d2d; color: #e0e0e0; border-color: #555; }
+    .dark .text-on-surface-variant { color: #b0b0b0; }
+    .dark .text-outline { color: #888; }
+    .dark .bg-white { background-color: #2d2d2d; }
+    .dark textarea { background-color: #2d2d2d; color: #e0e0e0; }
+    .dark [class*="bg-primary"] { background-color: #0044cc; }
+    .dark [class*="text-primary"] { color: #4d9fff !important; }
+    .dark [class*="border-"] { border-color: #444 !important; }
+    .dark .shadow-lg, .dark .shadow-sm, .dark .shadow-\[0px { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+    .dark .material-symbols-outlined { color: #aaa; }
+    .dark .bg-primary-container { background-color: #0044cc; }
+    .dark #nav-report.bg-gradient-to-br, .dark #nav-dashboard.bg-gradient-to-br { background: linear-gradient(135deg, #0044cc, #0066ff) !important; }
+    .dark #nav-report, .dark #nav-dashboard { color: #888; }
+    .dark #nav-report.text-white, .dark #nav-dashboard.text-white { color: #fff !important; }
+    .dark .bg-primary\/5 { background-color: rgba(0,68,204,0.2); }
+    .dark .bg-primary\/10 { background-color: rgba(0,68,204,0.15); }
+    .dark .bg-surface-container-high { background-color: #383838; }
+    .dark .bg-primary\/5 { background-color: rgba(0,68,204,0.15); }
+    .dark input[type="date"] { background-color: #2d2d2d; color: #e0e0e0; }
+    .dark .rounded-lg, .dark .rounded-xl, .dark .rounded-2xl { border: 1px solid #444; }
+    .dark .border-b-2 { border-color: #444 !important; }
+    .dark .text-tertiary { color: #ff6b6b !important; }
+    .dark .corretor-externo { color: #ff6b6b !important; }
+    .dark #meta-barra { background-color: #0044cc; }
+    .dark section.bg-primary { background: linear-gradient(135deg, #0044cc, #0066ff); }
 </style>
 </head>
 <body class="text-on-surface">
@@ -161,6 +194,7 @@
 <span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23]">RELATORIO OPENHOUSE</span>
 </div>
 <div class="flex items-center gap-2 md:gap-4">
+<button onclick="toggleDarkMode()" id="dark-mode-btn" class="material-symbols-outlined text-[#737685] hover:bg-[#ededf8] p-1.5 md:p-2 rounded-lg transition-colors cursor-pointer text-xl md:text-2xl" title="Modo Dark">dark_mode</button>
 <button onclick="limparDados()" class="material-symbols-outlined text-[#737685] hover:bg-[#ededf8] p-1.5 md:p-2 rounded-lg transition-colors cursor-pointer text-xl md:text-2xl" title="Limpar dados">delete_sweep</button>
 </div>
 </header>
@@ -1328,12 +1362,19 @@ async function imprimirPDF() {
     .summary-box h3 { margin: 0 0 10px 0; font-size: 14px; }
     .summary-box .valor { font-size: 28px; font-weight: bold; }
     .summary-box.vendas .valor { color: #00C853; }
-    .summary-box.aluguel .valor { color: #FFD600; }
-    .summary-box.corretores .valor { color: #D32F2F; }
-    .summary-box .porcentagem { font-size: 18px; font-weight: bold; color: #333; }
+    .summary-box.aluguel .valor { color: #b8860b; }
+    .summary-box.corretores .valor { color: #b71c1c; }
+    .summary-box .porcentagem { font-size: 18px; font-weight: bold; color: #222; }
+    .summary-box .media { font-size: 14px; font-weight: bold; color: #222; margin-top: 8px; }
     .chart-container { width: 100%; height: 300px; margin: 20px 0; }
     .header-info { display: flex; justify-content: space-between; margin-bottom: 15px; }
-    .header-info p { margin: 3px 0; font-size: 12px; color: #666; }
+    .header-info p { margin: 3px 0; font-size: 12px; color: #333; }
+    h1 { color: #000; font-size: 28px; font-weight: bold; margin-bottom: 15px; border-bottom: 3px solid #000; padding-bottom: 10px; }
+    h2 { color: #111; font-size: 18px; margin-top: 25px; margin-bottom: 15px; font-weight: bold; border-left: 5px solid #000; padding-left: 10px; }
+    th { background: #222 !important; color: #fff !important; font-weight: bold; }
+    td { color: #111; font-weight: 500; }
+    tr:nth-child(even) { background-color: #f0f0f0; }
+    tr:hover { background-color: #ddd; }
 </style>
 </head><body>
 <h1>Relatório Consolidado</h1>
@@ -1349,22 +1390,22 @@ async function imprimirPDF() {
 
 <div class="summary-grid">
     <div class="summary-box vendas">
-        <h3>Total Vendas</h3>
+        <h3>TOTAL VENDAS</h3>
         <div class="valor">${totalVendas}</div>
         <div class="porcentagem">${pctVendas}%</div>
-        <div style="margin-top: 10px; font-size: 12px; color: #666;">Média: ${mediaVendas}</div>
+        <div class="media">MÉDIA: ${mediaVendas}</div>
     </div>
     <div class="summary-box aluguel">
-        <h3>Total Aluguel</h3>
+        <h3>TOTAL ALUGUEL</h3>
         <div class="valor">${totalAluguel}</div>
         <div class="porcentagem">${pctAluguel}%</div>
-        <div style="margin-top: 10px; font-size: 12px; color: #666;">Média: ${mediaAluguel}</div>
+        <div class="media">MÉDIA: ${mediaAluguel}</div>
     </div>
     <div class="summary-box corretores">
-        <h3>Total Corretores Externos</h3>
+        <h3>TOTAL CORRETORES</h3>
         <div class="valor">${totalCorretores}</div>
         <div class="porcentagem">${pctCorretores}%</div>
-        <div style="margin-top: 10px; font-size: 12px; color: #666;">Média: ${mediaCorretores}</div>
+        <div class="media">MÉDIA: ${mediaCorretores}</div>
     </div>
 </div>
 
@@ -1567,7 +1608,31 @@ async function importarDados(event) {
 }
 
 // ==================== INICIALIZAÇÃO ====================
+function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+    updateDarkModeIcon();
+}
+
+function updateDarkModeIcon() {
+    const btn = document.getElementById('dark-mode-btn');
+    if (document.body.classList.contains('dark')) {
+        btn.textContent = 'light_mode';
+        btn.title = 'Modo Claro';
+    } else {
+        btn.textContent = 'dark_mode';
+        btn.title = 'Modo Dark';
+    }
+}
+
 async function iniciarAplicacao() {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) {
+        document.body.classList.add('dark');
+    }
+    updateDarkModeIcon();
+    
     await abrirDB();
     await verificarDadosIniciais();
     await buscarRelatorios();
