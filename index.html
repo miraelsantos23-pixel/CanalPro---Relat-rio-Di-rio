@@ -3,7 +3,7 @@
 <html class="light" lang="pt-BR"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-<title>Precision Curator - Daily Report</title>
+<title>Relatorio OpenHouse - Daily Report</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -151,7 +151,7 @@
 <header class="fixed top-0 left-0 right-0 z-50 bg-[#faf8ff]/95 backdrop-blur-md shadow-[0px_2px_10px_rgba(25,27,35,0.06)] h-14 md:h-16 flex justify-between items-center px-3 md:px-6">
 <div class="flex items-center gap-2 md:gap-3">
 <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-[10px] md:text-xs font-bold">EP</div>
-<span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23]">Precision Curator</span>
+<span class="text-lg md:text-xl font-black tracking-tighter text-[#191b23]">RELATORIO OPENHOUSE</span>
 </div>
 <div class="flex items-center gap-2 md:gap-4">
 <button onclick="limparDados()" class="material-symbols-outlined text-[#737685] hover:bg-[#ededf8] p-1.5 md:p-2 rounded-lg transition-colors cursor-pointer text-xl md:text-2xl" title="Limpar dados">delete_sweep</button>
@@ -280,7 +280,7 @@ ULTIMO CONTATO DO DIA
 </div>
 <div class="mt-6 md:mt-10 pt-4 md:pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-2">
 <span class="text-xs font-medium text-on-primary-container">CONSOLIDAÇÃO FINAL</span>
-<span id="consolidacao-final" class="text-lg md:text-2xl font-extrabold">SUM 00</span>
+<span id="consolidacao-final" class="text-lg md:text-2xl font-extrabold">TOTAL DO DIA: 0</span>
 </div>
 </section>
 
@@ -658,7 +658,7 @@ function atualizarQuantificacao() {
     document.getElementById('total-aluguel').textContent = aluguel;
     document.getElementById('total-vendas').textContent = vendas;
     document.getElementById('total-corretores').textContent = corretores;
-    document.getElementById('consolidacao-final').textContent = 'SUM ' + (aluguel + vendas + corretores);
+    document.getElementById('consolidacao-final').textContent = 'TOTAL DO DIA: ' + (aluguel + vendas + corretores);
 }
 
 document.getElementById('leads-vendas').addEventListener('input', atualizarQuantificacao);
