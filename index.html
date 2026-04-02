@@ -504,16 +504,30 @@ document.getElementById('daily-form').addEventListener('submit', function(e) {
         }
     });
     
+    function normalizarData(dataStr) {
+        if (!dataStr) return '';
+        if (dataStr.includes('/')) {
+            const partes = dataStr.split('/');
+            if (partes.length === 3) {
+                return `${partes[2]}-${partes[1]}-${partes[0]}`;
+            }
+        }
+        return dataStr;
+    }
+    
+    const dataRelatorioInput = document.getElementById('data-relatorio').value;
+    const dataRelatorioFormatada = normalizarData(dataRelatorioInput);
+    
     const relatorio = {
         id: Date.now(),
-        dataRelatorio: document.getElementById('data-relatorio').value,
+        dataRelatorio: dataRelatorioFormatada || new Date().toISOString().split('T')[0],
         primeiroContato: {
-            data: document.getElementById('primeiro-contato-data').value,
+            data: normalizarData(document.getElementById('primeiro-contato-data').value),
             horario: document.getElementById('primeiro-contato-horario').value,
             nome: document.getElementById('primeiro-contato-nome').value
         },
         ultimoContato: {
-            data: document.getElementById('ultimo-contato-data').value,
+            data: normalizarData(document.getElementById('ultimo-contato-data').value),
             horario: document.getElementById('ultimo-contato-horario').value,
             nome: document.getElementById('ultimo-contato-nome').value
         },
@@ -826,9 +840,12 @@ function exportarDados() {
     XLSX.writeFile(wb, `relatorio_consolidado_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
-const hoje = new Date().toISOString().split('T')[0];
-document.getElementById('data-inicio').value = hoje;
-document.getElementById('data-fim').value = hoje;
+const hoje = new Date();
+const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+
+document.getElementById('data-inicio').value = primeiroDiaMes;
+document.getElementById('data-fim').value = ultimoDiaMes;
 atualizarQuantificacao();
 
 window.addEventListener('resize', function() {
