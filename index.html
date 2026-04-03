@@ -546,8 +546,11 @@ Processar Dados
 
 <script>
 // ==================== BANCO DE DADOS SUPABASE ====================
+// Para produção segura: use Vite + variáveis de ambiente (VITE_SUPABASE_KEY)
+// Configure no Vercel: Settings > Environment Variables
 const SUPABASE_URL = 'https://nbaiusuyldnbadcytjpv.supabase.co';
-const SUPABASE_KEY = 'YOUR_API_KEY_HERE';
+// A chave abaixo é a chave ANON pública do Supabase - segura com RLS configurado
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iYWl1c3V5bGRuYmFkY3l0anB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzQ2OTcsImV4cCI6MjA5MDc1MDY5N30.2TO8d0M1cRQ3Ocqhlf01TrHHhMmcWGL07Ek8wtmv5SE';
 
 const supabaseFetch = async (endpoint, options = {}) => {
     const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
