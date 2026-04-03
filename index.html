@@ -1068,50 +1068,50 @@ async function processarDados() {
         let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
         const corretoresVisitas = {};
         let totalVisitas = 0;
-    
-    relatorios.forEach(r => {
-        totalVendas += r.leadsVendas || 0;
-        totalAluguel += r.leadsAluguel || 0;
-        totalCorretores += r.corretoresExternos || 0;
         
-        if (r.visitas) {
-            r.visitas.forEach(v => {
-                if (v.corretor) {
-                    const nomeNormalizado = v.corretor.toUpperCase().trim();
-                    corretoresVisitas[nomeNormalizado] = (corretoresVisitas[nomeNormalizado] || 0) + 1;
-                    totalVisitas++;
-                }
-            });
-        }
-    });
-    
-    document.getElementById('total-vendas-consolidado').textContent = totalVendas;
-    document.getElementById('total-aluguel-consolidado').textContent = totalAluguel;
-    document.getElementById('total-corretores-consolidado').textContent = totalCorretores;
-    
-    const metaPrevista = parseInt(document.getElementById('meta-prevista').value) || 100;
-    const percentual = metaPrevista > 0 ? Math.min(100, (totalVendas / metaPrevista) * 100) : 0;
-    document.getElementById('meta-percentual').textContent = Math.round(percentual) + '%';
-    document.getElementById('meta-barra').style.width = percentual + '%';
-    document.getElementById('meta-progresso').textContent = totalVendas;
-    document.getElementById('meta-total').textContent = metaPrevista;
-    
-    localStorage.setItem('metaPrevista', metaPrevista);
-    
-    const labels = relatorios.map(r => r.dataRelatorio || 'N/A');
-    const vendasData = relatorios.map(r => r.leadsVendas || 0);
-    const aluguelData = relatorios.map(r => r.leadsAluguel || 0);
-    const corretoresData = relatorios.map(r => r.corretoresExternos || 0);
-    
-    const mediaVendas = vendasData.length > 0 ? vendasData.reduce((a, b) => a + b, 0) / vendasData.length : 0;
-    
-    if (lineChart) lineChart.destroy();
-    const ctx = document.getElementById('line-chart').getContext('2d');
-    lineChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels.length ? labels : ['Sem dados'],
-            datasets: [
+        relatorios.forEach(r => {
+            totalVendas += r.leadsVendas || 0;
+            totalAluguel += r.leadsAluguel || 0;
+            totalCorretores += r.corretoresExternos || 0;
+            
+            if (r.visitas) {
+                r.visitas.forEach(v => {
+                    if (v.corretor) {
+                        const nomeNormalizado = v.corretor.toUpperCase().trim();
+                        corretoresVisitas[nomeNormalizado] = (corretoresVisitas[nomeNormalizado] || 0) + 1;
+                        totalVisitas++;
+                    }
+                });
+            }
+        });
+        
+        document.getElementById('total-vendas-consolidado').textContent = totalVendas;
+        document.getElementById('total-aluguel-consolidado').textContent = totalAluguel;
+        document.getElementById('total-corretores-consolidado').textContent = totalCorretores;
+        
+        const metaPrevista = parseInt(document.getElementById('meta-prevista').value) || 100;
+        const percentual = metaPrevista > 0 ? Math.min(100, (totalVendas / metaPrevista) * 100) : 0;
+        document.getElementById('meta-percentual').textContent = Math.round(percentual) + '%';
+        document.getElementById('meta-barra').style.width = percentual + '%';
+        document.getElementById('meta-progresso').textContent = totalVendas;
+        document.getElementById('meta-total').textContent = metaPrevista;
+        
+        localStorage.setItem('metaPrevista', metaPrevista);
+        
+        const labels = relatorios.map(r => r.dataRelatorio || 'N/A');
+        const vendasData = relatorios.map(r => r.leadsVendas || 0);
+        const aluguelData = relatorios.map(r => r.leadsAluguel || 0);
+        const corretoresData = relatorios.map(r => r.corretoresExternos || 0);
+        
+        const mediaVendas = vendasData.length > 0 ? vendasData.reduce((a, b) => a + b, 0) / vendasData.length : 0;
+        
+        if (lineChart) lineChart.destroy();
+        const ctx = document.getElementById('line-chart').getContext('2d');
+        lineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length ? labels : ['Sem dados'],
+                datasets: [
                 {
                     label: 'Média Vendas',
                     data: Array(labels.length).fill(mediaVendas),
