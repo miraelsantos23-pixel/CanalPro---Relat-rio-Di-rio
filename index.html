@@ -1753,39 +1753,65 @@ async function importarDados(event) {
     const file = event.target.files[0];
     if (!file) return;
     
+    console.log('Arquivo selecionado:', file.name, file.type, file.size);
+    
+    const fileName = file.name.toLowerCase();
+    const validExtensions = ['.xlsx', '.xls'];
+    const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!isValidExtension) {
+        alert('Por favor, selecione um arquivo Excel válido (.xlsx ou .xls). Arquivo: ' + file.name);
+        event.target.value = '';
+        return;
+    }
+    
     try {
         const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data);
+        console.log('Tamanho dos dados:', data.byteLength);
+        
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        console.log('Sheets encontrados:', workbook.SheetNames);
+        
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(sheet);
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        
+        console.log('Linhas encontradas:', jsonData.length);
+        
+        if (!jsonData || jsonData.length === 0) {
+            alert('O arquivo está vazio ou não contém dados.');
+            event.target.value = '';
+            return;
+        }
+        
+        console.log('Primeira linha:', jsonData[0]);
         
         await buscarRelatorios();
         
         let importados = 0;
         for (const row of jsonData) {
-            const dataRelatorio = row['Data do Relatório'] || new Date().toISOString().split('T')[0];
-            const codigo = gerarCodigoRelatorio(dataRelatorio);
+            const dataRelatorio = row['Data do Relatório'] || row['data_relatorio'] || row['Data'] || new Date().toISOString().split('T')[0];
+            const codigo = row['Código'] || row['codigo'] || gerarCodigoRelatorio(dataRelatorio);
             
             const relatorio = {
                 id: Date.now() + Math.random(),
-                codigo: codigo,
-                dataRelatorio: dataRelatorio,
+                codigo: String(codigo),
+                dataRelatorio: String(dataRelatorio),
                 primeiroContato: {
-                    data: row['Primeiro Contato Data'] || '',
-                    horario: row['Primeiro Contato Hora'] || '',
-                    nome: row['Primeiro Contato Nome'] || ''
+                    data: String(row['Primeiro Contato Data'] || row['primeiro_contato_data'] || row['Primeiro Contato'] || ''),
+                    horario: String(row['Primeiro Contato Hora'] || row['primeiro_contato_horario'] || ''),
+                    nome: String(row['Primeiro Contato Nome'] || row['primeiro_contato_nome'] || '')
                 },
                 ultimoContato: {
-                    data: row['Último Contato Data'] || '',
-                    horario: row['Último Contato Hora'] || '',
-                    nome: row['Último Contato Nome'] || ''
+                    data: String(row['Último Contato Data'] || row['ultimo_contato_data'] || row['Último Contato'] || ''),
+                    horario: String(row['Último Contato Hora'] || row['ultimo_contato_horario'] || ''),
+                    nome: String(row['Último Contato Nome'] || row['ultimo_contato_nome'] || '')
                 },
-                leadsVendas: parseInt(row['Leads Vendas']) || 0,
-                leadsAluguel: parseInt(row['Leads Aluguel']) || 0,
-                corretoresExternos: parseInt(row['Corretores Externos']) || 0,
-                visitas: row['Visitas OpenHouse'] ? row['Visitas OpenHouse'].split(';').map(v => ({ corretor: v.trim().toUpperCase(), numero: '' })) : [],
-                observacao: '',
+                leadsVendas: parseInt(row['Leads Vendas'] || row['leads_vendas'] || row['Vendas'] || 0) || 0,
+                leadsAluguel: parseInt(row['Leads Aluguel'] || row['leads_aluguel'] || row['Aluguel'] || 0) || 0,
+                corretoresExternos: parseInt(row['Corretores Externos'] || row['corretores_externos'] || row['Corretores'] || 0) || 0,
+                visitas: (row['Visitas OpenHouse'] || row['visitas_openhouse'] || row['Visitas'] || '').toString().split(';').map(v => ({ corretor: v.trim().toUpperCase(), numero: '' })).filter(v => v.corretor),
+                observacao: String(row['Observação'] || row['observacao'] || ''),
                 dataCriacao: new Date().toISOString()
             };
             
@@ -1800,8 +1826,8 @@ async function importarDados(event) {
         processarDados();
         event.target.value = '';
     } catch (error) {
-        console.error('Erro ao importar:', error);
-        alert('Erro ao importar arquivo. Verifique o formato.');
+        console.error('Erro detalhado ao importar:', error);
+        alert('Erro ao importar arquivo: ' + error.message + '\nVerifique o formato do arquivo.');
     }
 }
 
