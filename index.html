@@ -551,7 +551,10 @@ const SUPABASE_KEY = 'sb_publishable_seKwe2VFLHmL0y67jDpmRw_tmciMsEC';
 
 const supabaseFetch = async (endpoint, options = {}) => {
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+        const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+        console.log(`Supabase request:`, options.method || 'GET', url);
+        
+        const response = await fetch(url, {
             ...options,
             headers: {
                 'apikey': SUPABASE_KEY,
@@ -562,8 +565,11 @@ const supabaseFetch = async (endpoint, options = {}) => {
             }
         });
         
+        console.log(`Supabase response:`, response.status);
+        
         if (!response.ok) {
             const errorText = await response.text();
+            console.log(`Supabase error:`, errorText);
             let errorData;
             try {
                 errorData = JSON.parse(errorText);
@@ -607,7 +613,10 @@ async function salvarRelatorio(relatorio) {
 
 async function buscarTodosRelatorios() {
     try {
+        console.log('Buscando relatórios do Supabase...');
         const dados = await supabaseFetch('relatorios?order=created_at.desc');
+        console.log('Dados recebidos:', dados ? dados.length : 0);
+        
         if (!dados) return [];
         return dados.map(r => ({
             id: r.id,
@@ -651,13 +660,14 @@ async function excluirPorId(id) {
 }
 
 async function verificarDadosIniciais() {
-    const dadosIniciaisInseridos = localStorage.getItem('dadosIniciaisInseridos');
-    if (dadosIniciaisInseridos === 'true') {
-        return;
-    }
-    
-    const relatorios = await buscarTodosRelatorios();
-    if (relatorios.length === 0) {
+    try {
+        const relatorios = await buscarTodosRelatorios();
+        if (relatorios.length > 0) {
+            return;
+        }
+        
+        console.log('Nenhum relatório encontrado, inserindo dados de exemplo...');
+        
         const relatoriosFicticios = [
             {
                 id: 1,
@@ -744,8 +754,9 @@ async function verificarDadosIniciais() {
         for (const relatorio of relatoriosFicticios) {
             await salvarRelatorio(relatorio);
         }
-        localStorage.setItem('dadosIniciaisInseridos', 'true');
-        localStorage.setItem('contadorRelatorios', 2);
+        console.log('Dados de exemplo inseridos com sucesso!');
+    } catch (err) {
+        console.error('Erro ao verificar dados iniciais:', err);
     }
 }
 
