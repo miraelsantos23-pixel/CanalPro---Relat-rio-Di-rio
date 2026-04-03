@@ -549,8 +549,16 @@ Processar Dados
 const SUPABASE_URL = 'https://nbaiusuyldnbadcytjpv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iYWl1c3V5bGRuYmFkY3l0anB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzQ2OTcsImV4cCI6MjA5MDc1MDY5N30.BmQ3lC0qN9xR4J8P0c8KQzXvL2M6sYB7nW5jF1hT3Rk';
 
+let useLocalStorage = false;
+
 const supabaseFetch = async (endpoint, options = {}) => {
+    if (useLocalStorage) {
+        return localStorageFetch(endpoint, options);
+    }
+    
     try {
+        console.log(`Supabase request: ${SUPABASE_URL}/rest/v1/${endpoint}`, options.method || 'GET');
+        
         const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
             ...options,
             headers: {
@@ -562,8 +570,18 @@ const supabaseFetch = async (endpoint, options = {}) => {
             }
         });
         
+        console.log(`Supabase response status: ${response.status}`);
+        
         if (!response.ok) {
             const errorText = await response.text();
+            console.log(`Supabase error text: ${errorText}`);
+            
+            if (errorText.includes('invalid API key') || response.status === 401 || response.status === 403) {
+                console.warn('Supabase não disponível, usando localStorage temporariamente');
+                useLocalStorage = true;
+                return localStorageFetch(endpoint, options);
+            }
+            
             let errorData;
             try {
                 errorData = JSON.parse(errorText);
@@ -577,9 +595,51 @@ const supabaseFetch = async (endpoint, options = {}) => {
         return text ? JSON.parse(text) : null;
     } catch (err) {
         console.error('Erro na requisição Supabase:', err);
+        if (!useLocalStorage) {
+            useLocalStorage = true;
+            console.warn('Mudando para localStorage temporariamente');
+            return localStorageFetch(endpoint, options);
+        }
         throw err;
     }
 };
+
+function localStorageFetch(endpoint, options = {}) {
+    const key = 'relatorios_db';
+    let data = JSON.parse(localStorage.getItem(key) || '[]');
+    
+    if (endpoint === 'relatorios?order=created_at.desc' || endpoint === 'relatorios') {
+        if (options.method === 'POST') {
+            const body = JSON.parse(options.body || '{}');
+            const newRelatorio = {
+                ...body,
+                id: Date.now(),
+                created_at: new Date().toISOString()
+            };
+            data.push(newRelatorio);
+            localStorage.setItem(key, JSON.stringify(data));
+            return [newRelatorio];
+        }
+        return data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    
+    if (endpoint.includes('relatorios?id=eq.')) {
+        const id = parseInt(endpoint.split('id=eq.')[1]);
+        if (options.method === 'DELETE') {
+            data = data.filter(r => r.id !== id);
+            localStorage.setItem(key, JSON.stringify(data));
+            return { success: true };
+        }
+    }
+    
+    if (endpoint === 'relatorios' && options.method === 'DELETE') {
+        data = [];
+        localStorage.setItem(key, JSON.stringify(data));
+        return { success: true };
+    }
+    
+    return data;
+}
 
 async function salvarRelatorio(relatorio) {
     const dados = {
@@ -606,28 +666,34 @@ async function salvarRelatorio(relatorio) {
 }
 
 async function buscarTodosRelatorios() {
-    const dados = await supabaseFetch('relatorios?order=created_at.desc');
-    return dados.map(r => ({
-        id: r.id,
-        codigo: r.codigo,
-        dataRelatorio: r.data_relatorio,
-        primeiroContato: {
-            data: r.primeiro_contato_data,
-            horario: r.primeiro_contato_horario,
-            nome: r.primeiro_contato_nome
-        },
-        ultimoContato: {
-            data: r.ultimo_contato_data,
-            horario: r.ultimo_contato_horario,
-            nome: r.ultimo_contato_nome
-        },
-        leadsVendas: r.leads_vendas,
-        leadsAluguel: r.leads_aluguel,
-        corretoresExternos: r.corretores_externos,
-        visitas: r.visitas,
-        observacao: r.observacao,
-        dataCriacao: r.data_criacao
-    }));
+    try {
+        const dados = await supabaseFetch('relatorios?order=created_at.desc');
+        if (!dados) return [];
+        return dados.map(r => ({
+            id: r.id,
+            codigo: r.codigo || r.codigo_relatorio,
+            dataRelatorio: r.data_relatorio || r.dataRelatorio,
+            primeiroContato: {
+                data: r.primeiro_contato_data || r.primeiroContato?.data || '',
+                horario: r.primeiro_contato_horario || r.primeiroContato?.horario || '',
+                nome: r.primeiro_contato_nome || r.primeiroContato?.nome || ''
+            },
+            ultimoContato: {
+                data: r.ultimo_contato_data || r.ultimoContato?.data || '',
+                horario: r.ultimo_contato_horario || r.ultimoContato?.horario || '',
+                nome: r.ultimo_contato_nome || r.ultimoContato?.nome || ''
+            },
+            leadsVendas: r.leads_vendas ?? r.leadsVendas ?? 0,
+            leadsAluguel: r.leads_aluguel ?? r.leadsAluguel ?? 0,
+            corretoresExternos: r.corretores_externos ?? r.corretoresExternos ?? 0,
+            visitas: r.visitas || r.visitas_openhouse || [],
+            observacao: r.observacao || r.observacao_geral || '',
+            dataCriacao: r.data_criacao || r.created_at || r.dataCriacao
+        }));
+    } catch (err) {
+        console.error('Erro ao buscar relatórios:', err);
+        return [];
+    }
 }
 
 async function limparTodosRelatorios() {
