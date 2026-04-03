@@ -1239,6 +1239,9 @@ async function processarDados() {
             plugins: { legend: { display: false } }
         }
     });
+    } catch (err) {
+        console.error('Erro em processarDados:', err);
+    }
 }
 
 async function imprimirPDF() {
