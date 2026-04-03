@@ -549,10 +549,16 @@ Processar Dados
 const SUPABASE_URL = 'https://nbaiusuyldnbadcytjpv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_seKwe2VFLHmL0y67jDpmRw_tmciMsEC';
 
+let useLocalStorage = false;
+let supabaseError = null;
+
 const supabaseFetch = async (endpoint, options = {}) => {
+    if (useLocalStorage || supabaseError) {
+        return localStorageFetch(endpoint, options);
+    }
+    
     try {
         const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
-        console.log(`Supabase request:`, options.method || 'GET', url);
         
         const response = await fetch(url, {
             ...options,
@@ -565,27 +571,66 @@ const supabaseFetch = async (endpoint, options = {}) => {
             }
         });
         
-        console.log(`Supabase response:`, response.status);
-        
         if (!response.ok) {
             const errorText = await response.text();
-            console.log(`Supabase error:`, errorText);
-            let errorData;
-            try {
-                errorData = JSON.parse(errorText);
-            } catch {
-                errorData = { message: errorText };
+            console.error('Supabase erro:', response.status, errorText);
+            
+            if (response.status === 401 || response.status === 403 || errorText.includes('row') || errorText.includes('policy')) {
+                console.warn('Supabase indisponível, usando localStorage temporariamente');
+                useLocalStorage = true;
+                supabaseError = 'RLS blocked';
+                return localStorageFetch(endpoint, options);
             }
-            throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
+            
+            throw new Error(`Erro HTTP: ${response.status}`);
         }
         
         const text = await response.text();
         return text ? JSON.parse(text) : null;
     } catch (err) {
-        console.error('Erro na requisição Supabase:', err);
-        throw err;
+        console.error('Erro na requisição Supabase:', err.message);
+        useLocalStorage = true;
+        supabaseError = err.message;
+        return localStorageFetch(endpoint, options);
     }
 };
+
+function localStorageFetch(endpoint, options = {}) {
+    const key = 'relatorios_db';
+    let data = JSON.parse(localStorage.getItem(key) || '[]');
+    
+    if (endpoint.includes('relatorios') && !endpoint.includes('id=eq.')) {
+        if (options.method === 'POST') {
+            const body = JSON.parse(options.body || '{}');
+            const newRelatorio = {
+                ...body,
+                id: Date.now() + Math.random(),
+                created_at: new Date().toISOString()
+            };
+            data.push(newRelatorio);
+            localStorage.setItem(key, JSON.stringify(data));
+            return [newRelatorio];
+        }
+        return data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    
+    if (endpoint.includes('relatorios?id=eq.')) {
+        const id = parseFloat(endpoint.split('id=eq.')[1]);
+        if (options.method === 'DELETE') {
+            data = data.filter(r => r.id !== id);
+            localStorage.setItem(key, JSON.stringify(data));
+            return { success: true };
+        }
+    }
+    
+    if (endpoint === 'relatorios' && options.method === 'DELETE') {
+        data = [];
+        localStorage.setItem(key, JSON.stringify(data));
+        return { success: true };
+    }
+    
+    return data;
+}
 
 async function salvarRelatorio(relatorio) {
     const dados = {
