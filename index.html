@@ -1887,6 +1887,7 @@ async function iniciarAplicacao() {
     
     await verificarDadosIniciais();
     await buscarRelatorios();
+    processarDados();
     
     const hoje = new Date();
     const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
