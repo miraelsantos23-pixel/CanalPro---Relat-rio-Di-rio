@@ -973,6 +973,8 @@ document.getElementById('daily-form').addEventListener('submit', async function(
 });
 
 function mostrarPagina(pagina) {
+    console.log('Navegando para:', pagina);
+    
     document.getElementById('report-page').classList.add('hidden');
     document.getElementById('dashboard-page').classList.add('hidden');
     document.getElementById('nav-report').classList.remove('bg-gradient-to-br', 'from-[#003d9b]', 'to-[#0052cc]', 'text-white');
@@ -988,7 +990,13 @@ function mostrarPagina(pagina) {
         document.getElementById('dashboard-page').classList.remove('hidden');
         document.getElementById('nav-dashboard').classList.add('bg-gradient-to-br', 'from-[#003d9b]', 'to-[#0052cc]', 'text-white');
         document.getElementById('nav-dashboard').classList.remove('text-[#737685]');
-        processarDados();
+        
+        console.log('Chamando processarDados...');
+        processarDados().then(() => {
+            console.log('processarDados concluído');
+        }).catch(err => {
+            console.error('Erro em processarDados:', err);
+        });
     }
 }
 
