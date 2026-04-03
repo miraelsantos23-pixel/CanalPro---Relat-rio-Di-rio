@@ -1794,7 +1794,7 @@ async function gerarPDF(relatorios, dataInicio, dataFim) {
 <\/script>
 </body></html>`;
 
-    const blob = new Blob([html], { type: 'text/html' });
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, '_blank');
     win.onload = () => {
