@@ -351,10 +351,22 @@ ULTIMO CONTATO DO DIA
 <span class="material-symbols-outlined text-lg md:text-[20px]">print</span>
 <span class="text-sm">Imprimir</span>
 </button>
-<button onclick="exportarDados()" class="flex-1 lg:flex-none items-center gap-2 px-4 md:px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-opacity active:scale-95 duration-200 justify-center">
+<div class="relative">
+<button onclick="mostrarMenuExportar()" class="flex-1 lg:flex-none items-center gap-2 px-4 md:px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-opacity active:scale-95 duration-200 justify-center">
 <span class="material-symbols-outlined text-lg md:text-[20px]">file_download</span>
 <span class="text-sm">Exportar</span>
 </button>
+<div id="menu-exportar" class="hidden absolute right-0 mt-2 w-48 bg-surface-container-high rounded-xl shadow-lg z-50 border border-outline/20">
+<button onclick="exportarDados('xlsx')" class="w-full text-left px-4 py-3 hover:bg-surface-container-highest text-on-surface text-sm font-medium flex items-center gap-2 rounded-t-xl">
+<span class="material-symbols-outlined text-lg">table_chart</span>
+Exportar .xlsx
+</button>
+<button onclick="exportarDados('pdf')" class="w-full text-left px-4 py-3 hover:bg-surface-container-highest text-on-surface text-sm font-medium flex items-center gap-2 rounded-b-xl">
+<span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+Exportar .pdf
+</button>
+</div>
+</div>
 </div>
 </div>
 
@@ -533,75 +545,91 @@ Processar Dados
 </div>
 
 <script>
-// ==================== BANCO DE DADOS INDEXEDDB ====================
-const DB_NAME = 'CanalProDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'relatorios';
+// ==================== BANCO DE DADOS SUPABASE ====================
+const SUPABASE_URL = 'https://nbaiusuyldnbadcytjpv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iYWl1c3V5bGRuYmFkY3l0anB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzQ2OTcsImV4cCI6MjA5MDc1MDY5N30.BmQ3lC0qN9xR4J8P0c8KQzXvL2M6sYB7nW5jF1hT3Rk';
 
-let db = null;
+const supabaseFetch = async (endpoint, options = {}) => {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+        ...options,
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': options.prefer || 'return=representation',
+            ...options.headers
+        }
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro na requisição');
+    }
+    
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
+};
 
-function abrirDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-            db = request.result;
-            resolve(db);
-        };
-        
-        request.onupgradeneeded = (event) => {
-            const database = event.target.result;
-            if (!database.objectStoreNames.contains(STORE_NAME)) {
-                database.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            }
-        };
+async function salvarRelatorio(relatorio) {
+    const dados = {
+        codigo: relatorio.codigo,
+        data_relatorio: relatorio.dataRelatorio,
+        primeiro_contato_data: relatorio.primeiroContato?.data,
+        primeiro_contato_horario: relatorio.primeiroContato?.horario,
+        primeiro_contato_nome: relatorio.primeiroContato?.nome,
+        ultimo_contato_data: relatorio.ultimoContato?.data,
+        ultimo_contato_horario: relatorio.ultimoContato?.horario,
+        ultimo_contato_nome: relatorio.ultimoContato?.nome,
+        leads_vendas: relatorio.leadsVendas,
+        leads_aluguel: relatorio.leadsAluguel,
+        corretores_externos: relatorio.corretoresExternos,
+        visitas: relatorio.visitas,
+        observacao: relatorio.observacao,
+        data_criacao: relatorio.dataCriacao
+    };
+    
+    return await supabaseFetch('relatorios', {
+        method: 'POST',
+        body: JSON.stringify(dados)
     });
 }
 
-function salvarRelatorio(relatorio) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            if (!db) await abrirDB();
-            const transaction = db.transaction([STORE_NAME], 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            store.add(relatorio);
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error);
-        } catch (error) {
-            reject(error);
-        }
+async function buscarTodosRelatorios() {
+    const dados = await supabaseFetch('relatorios?order=created_at.desc');
+    return dados.map(r => ({
+        id: r.id,
+        codigo: r.codigo,
+        dataRelatorio: r.data_relatorio,
+        primeiroContato: {
+            data: r.primeiro_contato_data,
+            horario: r.primeiro_contato_horario,
+            nome: r.primeiro_contato_nome
+        },
+        ultimoContato: {
+            data: r.ultimo_contato_data,
+            horario: r.ultimo_contato_horario,
+            nome: r.ultimo_contato_nome
+        },
+        leadsVendas: r.leads_vendas,
+        leadsAluguel: r.leads_aluguel,
+        corretoresExternos: r.corretores_externos,
+        visitas: r.visitas,
+        observacao: r.observacao,
+        dataCriacao: r.data_criacao
+    }));
+}
+
+async function limparTodosRelatorios() {
+    return await supabaseFetch('relatorios', {
+        method: 'DELETE',
+        headers: {'Prefer': 'return=minimal'}
     });
 }
 
-function buscarTodosRelatorios() {
-    return new Promise(async (resolve, reject) => {
-        try {
-            if (!db) await abrirDB();
-            const transaction = db.transaction([STORE_NAME], 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        } catch (error) {
-            reject(error);
-        }
-        }
-    );
-}
-
-function limparTodosRelatorios() {
-    return new Promise(async (resolve, reject) => {
-        try {
-            if (!db) await abrirDB();
-            const transaction = db.transaction([STORE_NAME], 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            store.clear();
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error);
-        } catch (error) {
-            reject(error);
-        }
+async function excluirPorId(id) {
+    return await supabaseFetch(`relatorios?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {'Prefer': 'return=minimal'}
     });
 }
 
@@ -1472,7 +1500,21 @@ async function imprimirPDF() {
     setTimeout(() => win.print(), 500);
 }
 
-async function exportarDados() {
+function mostrarMenuExportar() {
+    const menu = document.getElementById('menu-exportar');
+    menu.classList.toggle('hidden');
+    
+    document.addEventListener('click', function fechaMenu(e) {
+        if (!e.target.closest('[onclick*="mostrarMenuExportar"]') && !e.target.closest('#menu-exportar')) {
+            menu.classList.add('hidden');
+            document.removeEventListener('click', fechaMenu);
+        }
+    });
+}
+
+async function exportarDados(formato) {
+    document.getElementById('menu-exportar').classList.add('hidden');
+    
     const dataInicio = document.getElementById('data-inicio').value;
     const dataFim = document.getElementById('data-fim').value;
     const termoBusca = document.getElementById('busca-relatorio').value.trim().toLowerCase();
@@ -1494,25 +1536,196 @@ async function exportarDados() {
         });
     }
     
-    const dados = relatorios.map(r => ({
-        'Código': r.codigo,
-        'Data do Relatório': r.dataRelatorio,
-        'Primeiro Contato Data': r.primeiroContato?.data,
-        'Primeiro Contato Hora': r.primeiroContato?.horario,
-        'Primeiro Contato Nome': r.primeiroContato?.nome,
-        'Último Contato Data': r.ultimoContato?.data,
-        'Último Contato Hora': r.ultimoContato?.horario,
-        'Último Contato Nome': r.ultimoContato?.nome,
-        'Leads Vendas': r.leadsVendas,
-        'Leads Aluguel': r.leadsAluguel,
-        'Corretores Externos': r.corretoresExternos,
-        'Visitas OpenHouse': r.visitas ? r.visitas.map(v => v.corretor ? v.corretor.toUpperCase().trim() : '').join('; ') : ''
-    }));
+    if (formato === 'pdf') {
+        await gerarPDF(relatorios, dataInicio, dataFim);
+    } else {
+        const dados = relatorios.map(r => ({
+            'Código': r.codigo,
+            'Data do Relatório': r.dataRelatorio,
+            'Primeiro Contato Data': r.primeiroContato?.data,
+            'Primeiro Contato Hora': r.primeiroContato?.horario,
+            'Primeiro Contato Nome': r.primeiroContato?.nome,
+            'Último Contato Data': r.ultimoContato?.data,
+            'Último Contato Hora': r.ultimoContato?.horario,
+            'Último Contato Nome': r.ultimoContato?.nome,
+            'Leads Vendas': r.leadsVendas,
+            'Leads Aluguel': r.leadsAluguel,
+            'Corretores Externos': r.corretoresExternos,
+            'Visitas OpenHouse': r.visitas ? r.visitas.map(v => v.corretor ? v.corretor.toUpperCase().trim() : '').join('; ') : ''
+        }));
+        
+        const ws = XLSX.utils.json_to_sheet(dados);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Relatórios');
+        XLSX.writeFile(wb, `relatorio_consolidado_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+}
+
+async function gerarPDF(relatorios, dataInicio, dataFim) {
+    let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
+    const vendasPorDia = {};
+    const aluguelPorDia = {};
+    const corretoresPorDia = {};
     
-    const ws = XLSX.utils.json_to_sheet(dados);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Relatórios');
-    XLSX.writeFile(wb, `relatorio_consolidado_${new Date().toISOString().split('T')[0]}.xlsx`);
+    relatorios.forEach(r => {
+        totalVendas += r.leadsVendas || 0;
+        totalAluguel += r.leadsAluguel || 0;
+        totalCorretores += r.corretoresExternos || 0;
+        
+        const data = r.dataRelatorio;
+        vendasPorDia[data] = (vendasPorDia[data] || 0) + (r.leadsVendas || 0);
+        aluguelPorDia[data] = (aluguelPorDia[data] || 0) + (r.leadsAluguel || 0);
+        corretoresPorDia[data] = (corretoresPorDia[data] || 0) + (r.corretoresExternos || 0);
+    });
+    
+    const consolidacaoGeral = totalVendas + totalAluguel + totalCorretores;
+    const pctVendas = consolidacaoGeral > 0 ? ((totalVendas / consolidacaoGeral) * 100).toFixed(1) : 0;
+    const pctAluguel = consolidacaoGeral > 0 ? ((totalAluguel / consolidacaoGeral) * 100).toFixed(1) : 0;
+    const pctCorretores = consolidacaoGeral > 0 ? ((totalCorretores / consolidacaoGeral) * 100).toFixed(1) : 0;
+    
+    const mediaVendas = relatorios.length > 0 ? (totalVendas / relatorios.length).toFixed(1) : 0;
+    const mediaAluguel = relatorios.length > 0 ? (totalAluguel / relatorios.length).toFixed(1) : 0;
+    const mediaCorretores = relatorios.length > 0 ? (totalCorretores / relatorios.length).toFixed(1) : 0;
+    
+    const datasOrdenadas = Object.keys(vendasPorDia).sort();
+    const labels = datasOrdenadas.map(d => d.substring(5));
+    const vendasData = datasOrdenadas.map(d => vendasPorDia[d]);
+    const aluguelData = datasOrdenadas.map(d => aluguelPorDia[d]);
+    const corretoresData = datasOrdenadas.map(d => corretoresPorDia[d]);
+    
+    let html = `<!DOCTYPE html>
+<html><head><title>Relatório Consolidado</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
+<style>
+    @page { size: landscape; margin: 1cm; }
+    body { font-family: Arial, sans-serif; padding: 15px; max-width: 100%; }
+    h1 { color: #003d9b; font-size: 24px; margin-bottom: 10px; }
+    h2 { color: #333; font-size: 16px; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+    th { background: #003d9b; color: white; }
+    .summary { background: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 8px; }
+    .summary-grid { display: flex; justify-content: space-between; gap: 15px; margin: 15px 0; }
+    .summary-box { flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #ddd; }
+    .summary-box.vendas { border-color: #00C853; }
+    .summary-box.aluguel { border-color: #FFD600; }
+    .summary-box.corretores { border-color: #D32F2F; }
+    .summary-box h3 { margin: 0 0 10px 0; font-size: 14px; }
+    .summary-box .valor { font-size: 28px; font-weight: bold; }
+    .summary-box.vendas .valor { color: #00C853; }
+    .summary-box.aluguel .valor { color: #b8860b; }
+    .summary-box.corretores .valor { color: #b71c1c; }
+    .summary-box .porcentagem { font-size: 18px; font-weight: bold; color: #222; }
+    .summary-box .media { font-size: 14px; font-weight: bold; color: #222; margin-top: 8px; }
+    .chart-container { width: 100%; height: 300px; margin: 20px 0; }
+    .header-info { display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .header-info p { margin: 3px 0; font-size: 12px; color: #333; }
+    h1 { color: #000; font-size: 28px; font-weight: bold; margin-bottom: 15px; border-bottom: 3px solid #000; padding-bottom: 10px; }
+    h2 { color: #111; font-size: 18px; margin-top: 25px; margin-bottom: 15px; font-weight: bold; border-left: 5px solid #000; padding-left: 10px; }
+    th { background: #222 !important; color: #fff !important; font-weight: bold; }
+    td { color: #111; font-weight: 500; }
+    tr:nth-child(even) { background-color: #f0f0f0; }
+    tr:hover { background-color: #ddd; }
+</style>
+</head><body>
+<h1>Relatório Consolidado</h1>
+<div class="header-info">
+    <div>
+        <p><strong>Período:</strong> ${dataInicio || 'Início'} até ${dataFim || 'Atual'}</p>
+        <p><strong>Total de Relatórios:</strong> ${relatorios.length}</p>
+    </div>
+    <div>
+        <p><strong>Consolidação Geral:</strong> ${consolidacaoGeral}</p>
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-box vendas">
+        <h3>TOTAL VENDAS</h3>
+        <div class="valor">${totalVendas}</div>
+        <div class="porcentagem">${pctVendas}%</div>
+        <div class="media">MÉDIA: ${mediaVendas}</div>
+    </div>
+    <div class="summary-box aluguel">
+        <h3>TOTAL ALUGUEL</h3>
+        <div class="valor">${totalAluguel}</div>
+        <div class="porcentagem">${pctAluguel}%</div>
+        <div class="media">MÉDIA: ${mediaAluguel}</div>
+    </div>
+    <div class="summary-box corretores">
+        <h3>TOTAL CORRETORES</h3>
+        <div class="valor">${totalCorretores}</div>
+        <div class="porcentagem">${pctCorretores}%</div>
+        <div class="media">MÉDIA: ${mediaCorretores}</div>
+    </div>
+</div>
+
+<h2>Gráfico de Acompanhamento Temporal</h2>
+<div class="chart-container">
+    <canvas id="lineChart"></canvas>
+</div>
+
+<h2>Detalhamento dos Relatórios</h2>
+<table><tr><th>Código</th><th>Data</th><th>Leads Vendas</th><th>Leads Aluguel</th><th>Corretores</th><th>Visitas OpenHouse</th></tr>`;
+    
+    relatorios.forEach(r => {
+        const visitas = r.visitas ? r.visitas.map(v => v.corretor ? v.corretor.toUpperCase().trim() : '').join(', ') : '-';
+        html += `<tr><td>${r.codigo || '-'}</td><td>${r.dataRelatorio || '-'}</td><td>${r.leadsVendas || 0}</td><td>${r.leadsAluguel || 0}</td><td>${r.corretoresExternos || 0}</td><td>${visitas}</td></tr>`;
+    });
+    
+    html += `</table>
+<script>
+    const ctx = document.getElementById('lineChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ${JSON.stringify(labels)},
+            datasets: [
+                {
+                    label: 'Vendas',
+                    data: ${JSON.stringify(vendasData)},
+                    borderColor: '#00C853',
+                    backgroundColor: 'rgba(0, 200, 83, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Aluguel',
+                    data: ${JSON.stringify(aluguelData)},
+                    borderColor: '#FFD600',
+                    backgroundColor: 'rgba(255, 214, 0, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Corretores',
+                    data: ${JSON.stringify(corretoresData)},
+                    borderColor: '#D32F2F',
+                    backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+<\/script>
+</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    win.onload = () => {
+        setTimeout(() => {
+            win.print();
+            URL.revokeObjectURL(url);
+        }, 500);
+    };
 }
 
 async function limparDados() {
@@ -1534,21 +1747,6 @@ function excluirRelatorio(id) {
             alert('Erro ao excluir relatório');
         });
     }
-}
-
-function excluirPorId(id) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            if (!db) await abrirDB();
-            const transaction = db.transaction([STORE_NAME], 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            store.delete(id);
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error);
-        } catch (error) {
-            reject(error);
-        }
-    });
 }
 
 async function importarDados(event) {
@@ -1633,7 +1831,6 @@ async function iniciarAplicacao() {
     }
     updateDarkModeIcon();
     
-    await abrirDB();
     await verificarDadosIniciais();
     await buscarRelatorios();
     
