@@ -1035,32 +1035,39 @@ function renderizarTimeline(relatorios) {
 }
 
 async function processarDados() {
-    const dataInicio = document.getElementById('data-inicio').value;
-    const dataFim = document.getElementById('data-fim').value;
-    const termoBusca = document.getElementById('busca-relatorio').value.trim().toLowerCase();
-    
-    let relatorios = await buscarTodosRelatorios();
-    
-    if (dataInicio && dataFim) {
-        relatorios = relatorios.filter(r => {
-            const data = r.dataRelatorio;
-            return data >= dataInicio && data <= dataFim;
-        });
-    }
-    
-    if (termoBusca) {
-        relatorios = relatorios.filter(r => {
-            const codigo = (r.codigo || '').toLowerCase();
-            const data = (r.dataRelatorio || '').toLowerCase();
-            return codigo.includes(termoBusca) || data.includes(termoBusca);
-        });
-    }
-    
-    renderizarTimeline(await buscarTodosRelatorios());
-    
-    let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
-    const corretoresVisitas = {};
-    let totalVisitas = 0;
+    try {
+        console.log('Iniciando processarDados...');
+        
+        const dataInicio = document.getElementById('data-inicio').value;
+        const dataFim = document.getElementById('data-fim').value;
+        const termoBusca = document.getElementById('busca-relatorio').value.trim().toLowerCase();
+        
+        console.log('Buscando relatórios do Supabase...');
+        let relatorios = await buscarTodosRelatorios();
+        console.log('Relatórios encontrados:', relatorios.length);
+        
+        if (dataInicio && dataFim) {
+            relatorios = relatorios.filter(r => {
+                const data = r.dataRelatorio;
+                return data >= dataInicio && data <= dataFim;
+            });
+        }
+        
+        if (termoBusca) {
+            relatorios = relatorios.filter(r => {
+                const codigo = (r.codigo || '').toLowerCase();
+                const data = (r.dataRelatorio || '').toLowerCase();
+                return codigo.includes(termoBusca) || data.includes(termoBusca);
+            });
+        }
+        
+        console.log('Relatórios após filtro:', relatorios.length);
+        
+        renderizarTimeline(await buscarTodosRelatorios());
+        
+        let totalVendas = 0, totalAluguel = 0, totalCorretores = 0;
+        const corretoresVisitas = {};
+        let totalVisitas = 0;
     
     relatorios.forEach(r => {
         totalVendas += r.leadsVendas || 0;
