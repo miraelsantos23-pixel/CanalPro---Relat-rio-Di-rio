@@ -550,30 +550,35 @@ const SUPABASE_URL = 'https://nbaiusuyldnbadcytjpv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iYWl1c3V5bGRuYmFkY3l0anB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzQ2OTcsImV4cCI6MjA5MDc1MDY5N30.BmQ3lC0qN9xR4J8P0c8KQzXvL2M6sYB7nW5jF1hT3Rk';
 
 const supabaseFetch = async (endpoint, options = {}) => {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
-        ...options,
-        headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': options.prefer || 'return=representation',
-            ...options.headers
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+            ...options,
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': options.prefer || 'return=representation',
+                ...options.headers
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch {
+                errorData = { message: errorText };
+            }
+            throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
         }
-    });
-    
-    if (!response.ok) {
-        const errorText = await response.text();
-        let errorData;
-        try {
-            errorData = JSON.parse(errorText);
-        } catch {
-            errorData = { message: errorText };
-        }
-        throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
+        
+        const text = await response.text();
+        return text ? JSON.parse(text) : null;
+    } catch (err) {
+        console.error('Erro na requisição Supabase:', err);
+        throw err;
     }
-    
-    const text = await response.text();
-    return text ? JSON.parse(text) : null;
 };
 
 async function salvarRelatorio(relatorio) {
