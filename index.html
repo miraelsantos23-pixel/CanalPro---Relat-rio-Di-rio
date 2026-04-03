@@ -579,7 +579,7 @@ let contadorRelatorios = parseInt(localStorage.getItem('contadorRelatorios')) ||
 
 async function buscarTodosRelatorios() {
     try {
-        const dados = await supabaseFetch('relatorios?order=created_at.desc');
+        const dados = await supabaseFetch('relatorios?order=data_criacao.desc');
         if (!dados) return [];
         return dados.map(r => ({
             id: r.id,
@@ -1784,7 +1784,6 @@ async function iniciarAplicacao() {
     }
     updateDarkModeIcon();
     
-    await verificarDadosIniciais();
     await buscarRelatorios();
     processarDados();
     
