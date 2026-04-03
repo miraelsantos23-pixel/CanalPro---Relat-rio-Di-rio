@@ -577,6 +577,75 @@ let lineChart = null;
 let donutChart = null;
 let contadorRelatorios = parseInt(localStorage.getItem('contadorRelatorios')) || 1;
 
+async function buscarTodosRelatorios() {
+    try {
+        const dados = await supabaseFetch('relatorios?order=created_at.desc');
+        if (!dados) return [];
+        return dados.map(r => ({
+            id: r.id,
+            codigo: r.codigo,
+            dataRelatorio: r.data_relatorio,
+            primeiroContato: {
+                data: r.primeiro_contato_data || '',
+                horario: r.primeiro_contato_horario || '',
+                nome: r.primeiro_contato_nome || ''
+            },
+            ultimoContato: {
+                data: r.ultimo_contato_data || '',
+                horario: r.ultimo_contato_horario || '',
+                nome: r.ultimo_contato_nome || ''
+            },
+            leadsVendas: r.leads_vendas || 0,
+            leadsAluguel: r.leads_aluguel || 0,
+            corretoresExternos: r.corretores_externos || 0,
+            visitas: r.visitas || [],
+            observacao: r.observacao || '',
+            dataCriacao: r.data_criacao
+        }));
+    } catch (err) {
+        console.error('Erro ao buscar relatórios:', err);
+        return [];
+    }
+}
+
+async function salvarRelatorio(relatorio) {
+    const dados = {
+        codigo: relatorio.codigo,
+        data_relatorio: relatorio.dataRelatorio,
+        primeiro_contato_data: relatorio.primeiroContato?.data,
+        primeiro_contato_horario: relatorio.primeiroContato?.horario,
+        primeiro_contato_nome: relatorio.primeiroContato?.nome,
+        ultimo_contato_data: relatorio.ultimoContato?.data,
+        ultimo_contato_horario: relatorio.ultimoContato?.horario,
+        ultimo_contato_nome: relatorio.ultimoContato?.nome,
+        leads_vendas: relatorio.leadsVendas,
+        leads_aluguel: relatorio.leadsAluguel,
+        corretores_externos: relatorio.corretoresExternos,
+        visitas: relatorio.visitas,
+        observacao: relatorio.observacao,
+        data_criacao: relatorio.dataCriacao
+    };
+    
+    return await supabaseFetch('relatorios', {
+        method: 'POST',
+        body: JSON.stringify(dados)
+    });
+}
+
+async function limparTodosRelatorios() {
+    return await supabaseFetch('relatorios', {
+        method: 'DELETE',
+        headers: {'Prefer': 'return=minimal'}
+    });
+}
+
+async function excluirPorId(id) {
+    return await supabaseFetch(`relatorios?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {'Prefer': 'return=minimal'}
+    });
+}
+
 function gerarCodigoRelatorio(dataRelatorio) {
     const mes = dataRelatorio.substring(5, 7);
     const sequencia = String(contadorRelatorios).padStart(5, '0');
