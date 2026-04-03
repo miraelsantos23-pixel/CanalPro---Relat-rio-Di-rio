@@ -547,263 +547,30 @@ Processar Dados
 <script>
 // ==================== BANCO DE DADOS SUPABASE ====================
 const SUPABASE_URL = 'https://nbaiusuyldnbadcytjpv.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_seKwe2VFLHmL0y67jDpmRw_tmciMsEC';
-
-let useLocalStorage = false;
-let supabaseError = null;
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iYWl1c3V5bGRuYmFkY3l0anB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzQ2OTcsImV4cCI6MjA5MDc1MDY5N30.2TO8d0M1cRQ3Ocqhlf01TrHHhMmcWGL07Ek8wtmv5SE';
 
 const supabaseFetch = async (endpoint, options = {}) => {
-    if (useLocalStorage || supabaseError) {
-        return localStorageFetch(endpoint, options);
+    const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+    
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': options.prefer || 'return=representation',
+            ...options.headers
+        }
+    });
+    
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Erro HTTP: ${response.status}`);
     }
     
-    try {
-        const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
-        
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': options.prefer || 'return=representation',
-                ...options.headers
-            }
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Supabase erro:', response.status, errorText);
-            
-            if (response.status === 401 || response.status === 403 || errorText.includes('row') || errorText.includes('policy')) {
-                console.warn('Supabase indisponível, usando localStorage temporariamente');
-                useLocalStorage = true;
-                supabaseError = 'RLS blocked';
-                return localStorageFetch(endpoint, options);
-            }
-            
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const text = await response.text();
-        return text ? JSON.parse(text) : null;
-    } catch (err) {
-        console.error('Erro na requisição Supabase:', err.message);
-        useLocalStorage = true;
-        supabaseError = err.message;
-        return localStorageFetch(endpoint, options);
-    }
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
 };
-
-function localStorageFetch(endpoint, options = {}) {
-    const key = 'relatorios_db';
-    let data = JSON.parse(localStorage.getItem(key) || '[]');
-    
-    if (endpoint.includes('relatorios') && !endpoint.includes('id=eq.')) {
-        if (options.method === 'POST') {
-            const body = JSON.parse(options.body || '{}');
-            const newRelatorio = {
-                ...body,
-                id: Date.now() + Math.random(),
-                created_at: new Date().toISOString()
-            };
-            data.push(newRelatorio);
-            localStorage.setItem(key, JSON.stringify(data));
-            return [newRelatorio];
-        }
-        return data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
-    
-    if (endpoint.includes('relatorios?id=eq.')) {
-        const id = parseFloat(endpoint.split('id=eq.')[1]);
-        if (options.method === 'DELETE') {
-            data = data.filter(r => r.id !== id);
-            localStorage.setItem(key, JSON.stringify(data));
-            return { success: true };
-        }
-    }
-    
-    if (endpoint === 'relatorios' && options.method === 'DELETE') {
-        data = [];
-        localStorage.setItem(key, JSON.stringify(data));
-        return { success: true };
-    }
-    
-    return data;
-}
-
-async function salvarRelatorio(relatorio) {
-    const dados = {
-        codigo: relatorio.codigo,
-        data_relatorio: relatorio.dataRelatorio,
-        primeiro_contato_data: relatorio.primeiroContato?.data,
-        primeiro_contato_horario: relatorio.primeiroContato?.horario,
-        primeiro_contato_nome: relatorio.primeiroContato?.nome,
-        ultimo_contato_data: relatorio.ultimoContato?.data,
-        ultimo_contato_horario: relatorio.ultimoContato?.horario,
-        ultimo_contato_nome: relatorio.ultimoContato?.nome,
-        leads_vendas: relatorio.leadsVendas,
-        leads_aluguel: relatorio.leadsAluguel,
-        corretores_externos: relatorio.corretoresExternos,
-        visitas: relatorio.visitas,
-        observacao: relatorio.observacao,
-        data_criacao: relatorio.dataCriacao
-    };
-    
-    return await supabaseFetch('relatorios', {
-        method: 'POST',
-        body: JSON.stringify(dados)
-    });
-}
-
-async function buscarTodosRelatorios() {
-    try {
-        console.log('Buscando relatórios do Supabase...');
-        const dados = await supabaseFetch('relatorios?order=created_at.desc');
-        console.log('Dados recebidos:', dados ? dados.length : 0);
-        
-        if (!dados) return [];
-        return dados.map(r => ({
-            id: r.id,
-            codigo: r.codigo || r.codigo_relatorio,
-            dataRelatorio: r.data_relatorio || r.dataRelatorio,
-            primeiroContato: {
-                data: r.primeiro_contato_data || r.primeiroContato?.data || '',
-                horario: r.primeiro_contato_horario || r.primeiroContato?.horario || '',
-                nome: r.primeiro_contato_nome || r.primeiroContato?.nome || ''
-            },
-            ultimoContato: {
-                data: r.ultimo_contato_data || r.ultimoContato?.data || '',
-                horario: r.ultimo_contato_horario || r.ultimoContato?.horario || '',
-                nome: r.ultimo_contato_nome || r.ultimoContato?.nome || ''
-            },
-            leadsVendas: r.leads_vendas ?? r.leadsVendas ?? 0,
-            leadsAluguel: r.leads_aluguel ?? r.leadsAluguel ?? 0,
-            corretoresExternos: r.corretores_externos ?? r.corretoresExternos ?? 0,
-            visitas: r.visitas || r.visitas_openhouse || [],
-            observacao: r.observacao || r.observacao_geral || '',
-            dataCriacao: r.data_criacao || r.created_at || r.dataCriacao
-        }));
-    } catch (err) {
-        console.error('Erro ao buscar relatórios:', err);
-        return [];
-    }
-}
-
-async function limparTodosRelatorios() {
-    return await supabaseFetch('relatorios', {
-        method: 'DELETE',
-        headers: {'Prefer': 'return=minimal'}
-    });
-}
-
-async function excluirPorId(id) {
-    return await supabaseFetch(`relatorios?id=eq.${id}`, {
-        method: 'DELETE',
-        headers: {'Prefer': 'return=minimal'}
-    });
-}
-
-async function verificarDadosIniciais() {
-    try {
-        const relatorios = await buscarTodosRelatorios();
-        if (relatorios.length > 0) {
-            return;
-        }
-        
-        console.log('Nenhum relatório encontrado, inserindo dados de exemplo...');
-        
-        const relatoriosFicticios = [
-            {
-                id: 1,
-                codigo: '0300001',
-                dataRelatorio: '2026-03-28',
-                primeiroContato: { data: '28/03/2026', horario: '08:30', nome: 'Carlos Silva' },
-                ultimoContato: { data: '28/03/2026', horario: '18:45', nome: 'Ana Costa' },
-                leadsVendas: 12,
-                leadsAluguel: 8,
-                corretoresExternos: 5,
-                visitas: [
-                    { numero: 'AT-0001', corretor: 'Ricardo Soares' },
-                    { numero: 'AT-0002', corretor: 'Ana Mendes' }
-                ],
-                observacao: 'Dia movimentado com boa procura por imóveis comerciais.',
-                dataCriacao: '2026-03-28T10:00:00.000Z'
-            },
-            {
-                id: 2,
-                codigo: '0300002',
-                dataRelatorio: '2026-03-29',
-                primeiroContato: { data: '29/03/2026', horario: '09:00', nome: 'Pedro Santos' },
-                ultimoContato: { data: '29/03/2026', horario: '17:30', nome: 'Maria Oliveira' },
-                leadsVendas: 15,
-                leadsAluguel: 10,
-                corretoresExternos: 7,
-                visitas: [
-                    { numero: 'AT-0003', corretor: 'Ricardo Soares' },
-                    { numero: 'AT-0004', corretor: 'Fabio Bueno' }
-                ],
-                observacao: 'Novos empreendimentos geraram bastante interesse.',
-                dataCriacao: '2026-03-29T09:30:00.000Z'
-            },
-            {
-                id: 3,
-                codigo: '0300003',
-                dataRelatorio: '2026-03-30',
-                primeiroContato: { data: '30/03/2026', horario: '08:15', nome: 'João Ferreira' },
-                ultimoContato: { data: '30/03/2026', horario: '19:00', nome: 'Juliana Lima' },
-                leadsVendas: 8,
-                leadsAluguel: 14,
-                corretoresExternos: 4,
-                visitas: [
-                    { numero: 'AT-0005', corretor: 'Ana Mendes' }
-                ],
-                observacao: 'Aluguel teve alta procura neste dia.',
-                dataCriacao: '2026-03-30T11:00:00.000Z'
-            },
-            {
-                id: 4,
-                codigo: '0300004',
-                dataRelatorio: '2026-03-31',
-                primeiroContato: { data: '31/03/2026', horario: '09:30', nome: 'Roberto Alves' },
-                ultimoContato: { data: '31/03/2026', horario: '18:00', nome: 'Carla Souza' },
-                leadsVendas: 20,
-                leadsAluguel: 6,
-                corretoresExternos: 9,
-                visitas: [
-                    { numero: 'AT-0006', corretor: 'Ricardo Soares' },
-                    { numero: 'AT-0007', corretor: 'Fabio Bueno' },
-                    { numero: 'AT-0008', corretor: 'Ana Mendes' }
-                ],
-                observacao: 'Final de mês com resultados excelente em vendas.',
-                dataCriacao: '2026-03-31T14:00:00.000Z'
-            },
-            {
-                id: 5,
-                codigo: '0400001',
-                dataRelatorio: '2026-04-01',
-                primeiroContato: { data: '01/04/2026', horario: '08:00', nome: 'Marcos Dias' },
-                ultimoContato: { data: '01/04/2026', horario: '17:00', nome: 'Luciana Rodrigues' },
-                leadsVendas: 10,
-                leadsAluguel: 12,
-                corretoresExternos: 6,
-                visitas: [
-                    { numero: 'AT-0009', corretor: 'Fabio Bueno' },
-                    { numero: 'AT-0010', corretor: 'Ana Mendes' }
-                ],
-                observacao: 'Início de mês equilibrado entre vendas e aluguel.',
-                dataCriacao: '2026-04-01T08:30:00.000Z'
-            }
-        ];
-        
-        for (const relatorio of relatoriosFicticios) {
-            await salvarRelatorio(relatorio);
-        }
-        console.log('Dados de exemplo inseridos com sucesso!');
-    } catch (err) {
-        console.error('Erro ao verificar dados iniciais:', err);
-    }
-}
 
 // ==================== FUNCTIONS ====================
 let lineChart = null;
